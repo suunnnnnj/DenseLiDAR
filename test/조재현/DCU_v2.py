@@ -4,6 +4,7 @@ maskFT(Attention map) 적용 version
 파일 경로에 알맞는 데이터 경로 지정
 command : python3 test.py
 input : RGB image, LiDAR Raw data, Pseudo Depth map
+result : Dense Depth * maskFT(Attention map)
 """
 
 import torch
