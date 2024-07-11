@@ -3,6 +3,7 @@
 파일 경로에 알맞는 데이터 경로 지정
 command : python3 test.py
 input : RGB image, LiDAR Raw data, Pseudo Depth map
+Result : Dense Depth * Attention Map(select 1 channel)
 """
 import torch
 import numpy as np
