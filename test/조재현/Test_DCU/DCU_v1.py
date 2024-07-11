@@ -18,7 +18,7 @@ def rectify_depth(sparse_depth, pseudo_depth, threshold=1.0):
 
 # path
 sparse_depth_path = '/home/mobiltech/Desktop/Test/lidar.png'  # Raw lidar data
-pseudo_depth_path = '/home/mobiltech/Desktop/Test/1.png'  # Pseudo depth
+pseudo_depth_path = '/home/mobiltech/Desktop/Test/Pseudo_depth.png'  # Pseudo depth
 left_image_path = '/home/mobiltech/Desktop/Test/image.png'  # RGB image
 output_path = '/home/mobiltech/Desktop/Test/multiplied_output.png'  # Output image
 
