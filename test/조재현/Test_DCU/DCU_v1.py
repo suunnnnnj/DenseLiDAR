@@ -1,7 +1,7 @@
 """
-사용법
+
 파일 경로에 알맞는 데이터 경로 지정
-command : python3 test.py
+command : python3 DCU_v1.py
 input : RGB image, LiDAR Raw data, Pseudo Depth map
 """
 import torch
