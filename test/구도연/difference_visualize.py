@@ -5,7 +5,8 @@ command:
     - (test.py 사용법과 같음.)
 
 input:
-    - kitti_dataset
+    - model 실행 결과 outC, outN, maskC, maskN에서 연산을 거친(test.py 내 test function에서 이미 구현)
+    - pred1, predN, predMaskN
 
 how_to_use:
     - DeepLiDAR project의 test.py에 difference_visualize 함수 붙여넣기
