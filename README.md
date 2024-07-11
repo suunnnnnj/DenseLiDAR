@@ -1,4 +1,4 @@
-# Mobiltech-Gachon
+# Self-Supervised Depth Completion
 Mobiltech-Gachon PJ for the month
 
 ## Basic DenseLiDAR Architecture
