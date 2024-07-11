@@ -1,3 +1,11 @@
+"""
+maskFT()를 적용시킨 attention map 적용
+사용법
+파일 경로에 알맞는 데이터 경로 지정
+command : python3 test2.py
+input : RGB image, LiDAR Raw data, Pseudo Depth map
+"""
+
 import torch
 import torch.nn as nn
 import numpy as np
