@@ -8,8 +8,7 @@ Result : Dense Depth * Attention Map(select 1 channel)
 import torch
 import numpy as np
 import cv2
-import os
-from submodels.depthCompletionNew_blockN import depthCompletionNew_blockN
+from DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN
 
 
 def rectify_depth(sparse_depth, pseudo_depth, threshold=1.0):

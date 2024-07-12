@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import cv2
-from submodels.depthCompletionNew_blockN import depthCompletionNew_blockN
+from DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN
 
 # Define rectify_depth function
 def rectify_depth(sparse_depth, pseudo_depth, threshold=1.0):
