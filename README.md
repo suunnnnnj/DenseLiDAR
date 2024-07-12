@@ -3,7 +3,9 @@ Mobiltech-Gachon PJ for the month
 
 ## Basic DenseLiDAR Architecture
 <img width="797" alt="image" src="https://github.com/9-coding/Mobiltech-Gachon/assets/127665166/7b973b56-38af-4e79-b602-c5f0443db6ce">
-<hr>
+
+## Target Architecture
+![Screenshot from 2024-07-12 10-05-10](https://github.com/user-attachments/assets/9297ca4a-0b3a-49bc-ab27-9c6fc3434ab0)
 
 ## Our Variation Samples
 ### 1. Add SAM from Basic DenseLiDAR
