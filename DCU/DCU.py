@@ -11,47 +11,13 @@ import torch
 import torch.nn as nn
 import numpy as np
 import cv2
-from DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN
+from DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN, maskFt
 
 # Define rectify_depth function
 def rectify_depth(sparse_depth, pseudo_depth, threshold=1.0):
     difference = torch.abs(sparse_depth - pseudo_depth)
     rectified_depth = torch.where(difference > threshold, torch.tensor(0.0, device=sparse_depth.device), sparse_depth)
     return rectified_depth
-
-# Define the maskFt class
-class maskFt(nn.Module):
-    def __init__(self, channels=1, num_of_layers=3, kernel_size=3, padding=1, features=97):
-        super(maskFt, self).__init__()
-        self.channels = channels
-        self.num_of_layers = num_of_layers
-        self.kernel_size = kernel_size
-        self.padding = padding
-        self.features = features
-        
-        layers = []
-        for _ in range(num_of_layers - 1):
-            layers.append(nn.Conv2d(in_channels=features, out_channels=features, kernel_size=kernel_size, padding=padding, bias=True))
-            layers.append(nn.BatchNorm2d(features))
-            layers.append(nn.ReLU(inplace=True))
-        layers.append(nn.Conv2d(in_channels=features, out_channels=channels, kernel_size=kernel_size, padding=padding, bias=True))
-        
-        self.ftcnn = nn.Sequential(*layers)
-        self._initialize_weights()
-
-    def _initialize_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-
-    def forward(self, tempCat):
-        out = self.ftcnn(tempCat)
-        return out
 
 # Image paths
 sparse_depth_path = '/home/mobiltech/Desktop/Test/lidar.png'  # Raw lidar data
