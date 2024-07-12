@@ -1,7 +1,11 @@
 from __future__ import print_function
 import torch.utils.data
 import math
-from DCU.submodels.submodule import *
+
+from torch import nn
+
+from Submodules.DCU.submodels.submodule import convbn, predict_normal, adaptative_cat
+
 
 class UpProject(nn.Module):
 

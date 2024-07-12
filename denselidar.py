@@ -1,3 +1,4 @@
+# denselidar.py
 """
 maskFT(Attention map) 적용 version
 사용법
@@ -11,8 +12,10 @@ import torch
 import numpy as np
 import cv2
 import os
-from DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN, maskFt
-from ip_basic.depth_completion import ip_basic
+
+from Submodules.DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN, maskFt
+from Submodules.data_rectification import rectify_depth
+from Submodules.ip_basic.depth_completion import ip_basic
 
 
 def tensor_transform(sparse_depth_path, pseudo_depth_map, left_image_path):
@@ -25,14 +28,6 @@ def tensor_transform(sparse_depth_path, pseudo_depth_map, left_image_path):
     left_image = torch.from_numpy(left_image_np).permute(2, 0, 1).unsqueeze(0)  # (1, 3, H, W)
 
     return sparse_depth, pseudo_depth, left_image
-
-
-# Define rectify_depth function
-def rectify_depth(sparse_depth, pseudo_depth, threshold=1.0):
-    difference = torch.abs(sparse_depth - pseudo_depth)
-    rectified_depth = torch.where(difference > threshold, torch.tensor(0.0, device=sparse_depth.device), sparse_depth)
-    return rectified_depth
-
 
 
 # Image paths
@@ -56,11 +51,11 @@ model = depthCompletionNew_blockN(bs=1)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
-sparse_depth = sparse_depth.to(device)
+rectified_depth = rectified_depth.to(device)
 pseudo_depth = pseudo_depth.to(device)
 left_image = left_image.to(device)
 
-sparse2 = sparse_depth
+sparse2 = rectified_depth
 mask = pseudo_depth
 
 # Forward pass

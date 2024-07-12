@@ -1,3 +1,4 @@
+
 import glob
 import os
 import sys
@@ -7,7 +8,7 @@ import cv2
 import numpy as np
 import png
 
-from ip_basic.ip_basic_utils import depth_map_utils, vis_utils
+from Submodules.ip_basic.ip_basic_utils import depth_map_utils, vis_utils
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -22,7 +23,7 @@ def ip_basic(sparse_depth_path):
     # Options
     ##############################
     # Validation set
-    data_path = os.path.dirname(current_dir)
+    data_path = os.path.dirname(os.path.dirname(current_dir))
 
     input_depth_dir = data_path + os.path.dirname(sparse_depth_path)
     print("input_depth_dir: " + input_depth_dir)
