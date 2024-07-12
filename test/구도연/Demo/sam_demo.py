@@ -15,8 +15,9 @@ how_to_use:
     - 실행
 
 result:
-    -
-    -
+    - sample_image의 segment 결과 출력.
+    - mask들이 sample_image 위에 시각적으로 보여짐.
+
 reference:
     - https://blog.roboflow.com/how-to-use-segment-anything-model-sam/
 """
