@@ -44,7 +44,7 @@ rectified_depth = rectify_depth(sparse_depth, pseudo_depth, threshold=1)
 model = depthCompletionNew_blockN(bs=1)
 model.to(device)
 
-sparse2 = sparse_depth 
+sparse2 = rectified_depth 
 mask = pseudo_depth  
 
 # forward pass
