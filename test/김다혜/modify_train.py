@@ -118,7 +118,7 @@ def train(inputl,gt1,sparse,mask):
 
         outN, maskN3 = model(inputl, sparse, mask)
    	tempMask = torch.zeros_like(outN)
-   	 predN = outN[:, 0, :, :]
+   	predN = outN[:, 0, :, :]
     	maskN = torch.squeeze(maskN3)
     	tempMask[:, 0, :, :] = maskN
     	predMask = F.softmax(tempMask)
