@@ -105,43 +105,28 @@ def total_loss(pred,predN,target):
 
     return loss,loss1,loss3
 
-def train(inputl,gt1,sparse,mask,params):
+def train(inputl,gt1,sparse,mask):
         model.train()
         inputl = Variable(torch.FloatTensor(inputl))
         gt1 = Variable(torch.FloatTensor(gt1))
         sparse = Variable(torch.FloatTensor(sparse))
         mask = Variable(torch.FloatTensor(mask))
-        params = Variable(torch.FloatTensor(params))
         if args.cuda:
-            inputl,gt1,sparse,params = inputl.cuda(),gt1.cuda(),sparse.cuda(),params.cuda()
+            inputl,gt1,sparse = inputl.cuda(),gt1.cuda(),sparse.cuda()
             mask = mask.cuda()
         optimizer.zero_grad()
 
-        outC, outN, maskC3, maskN3, normals2 = model(inputl, sparse, mask)
-        tempMask = torch.zeros_like(outC)
-        predC = outC[:, 0, :, :]
-        predN = outN[:, 0, :, :]
-        maskC = torch.squeeze(maskC3)
-        maskN = torch.squeeze(maskN3)
-        tempMask[:, 0, :, :] = maskC
-        tempMask[:, 1, :, :] = maskN
-        predMask = F.softmax(tempMask)
-        predMaskC = predMask[:, 0, :, :]
-        predMaskN = predMask[:, 1, :, :]
-        pred = predC * predMaskC + predN * predMaskN
+        outN, maskN3 = model(inputl, sparse, mask)
+   	tempMask = torch.zeros_like(outN)
+   	 predN = outN[:, 0, :, :]
+    	maskN = torch.squeeze(maskN3)
+    	tempMask[:, 0, :, :] = maskN
+    	predMask = F.softmax(tempMask)
+    	predMaskN = predMask[:, 0, :, :]
+    	pred = predN * predMaskN
 
         pred = torch.unsqueeze(pred,1)
         predN = torch.unsqueeze(predN, 1)
-        predC = torch.unsqueeze(predC, 1)
-
-        b,ch, h, w = normals2.size()
-        normals2 = normals2.permute(0,2, 3, 1).contiguous().view(-1, 3)
-        normals2 = F.normalize(normals2)
-        normals2 = normals2.view(b,h, w, 3)
-        outputN = torch.zeros_like(normals2)
-        outputN[:,:,:,0] = -normals2[:,:,:,0]
-        outputN[:,:,:,1] = -normals2[:,:,:,2]
-        outputN[:,:,:,2] = -normals2[:,:,:,1]
 
         loss,loss1,loss3 = total_loss(pred, predN, gt1)
         loss.backward()
@@ -187,7 +172,7 @@ def main():
         for batch_idx, (imgL_crop,input_crop1,sparse2,mask2,params) in enumerate(TrainImgLoader):
             start_time = time.time()
 
-            loss,loss1,loss3 = train(imgL_crop,input_crop1,sparse2,mask2,params)
+            loss,loss1,loss3 = train(imgL_crop,input_crop1,sparse2,mask2)
             print('Iter %d / %d training loss = %.4f, Ploss = %.4f, Nloss = %.4f, time = %.2f' % (batch_idx, epoch, loss, loss1, loss3, time.time() - start_time))
             total_train_loss += loss
 
