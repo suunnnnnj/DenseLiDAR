@@ -48,10 +48,9 @@ def train(model, train_loader, optimizer, epoch, device):
         optimizer.step()
 
         running_loss += loss.item()
+    print(f"Epoch {epoch + 1} training loss: {running_loss / len(train_loader):.4f}")
+    
 
-        if i % 100 == 99:
-            print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.4f}")
-            running_loss = 0.0
 
 def validate(model, val_loader, epoch, device):
     model.eval()
