@@ -39,7 +39,7 @@ def train(model, train_loader, optimizer, epoch, device):
 
         dense_pseudo_depth, pseudo_depth_map = model(raw_image, velodyne_image, device) 
         dense_pseudo_depth = dense_pseudo_depth.to(device)  # (B, H, W) -> (B, 1, H, W)
-        dense_target = torch.tensor(pseudo_gt_map).to(device)  # GPU로 이동
+        dense_target = pseudo_gt_map.clone().detach().to(device)  # GPU로 이동
         print(f"VType: {dense_pseudo_depth.dtype}, VShape: {dense_pseudo_depth.shape}")
         print(f"VType: {dense_target.dtype}, VShape: {dense_target.shape}")
 
