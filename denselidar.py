@@ -37,8 +37,7 @@ if __name__ == '__main__':
     pseudo_GT_Map = ip_basic(gt_path)
 
     # Transform tensor
-    sparse_depth, left_image = tensor_transform(sparse_depth_path,
-                                                               left_image_path)
+    sparse_depth, left_image = tensor_transform(sparse_depth_path, left_image_path)
 
     # Rectified depth
     rectified_depth = rectify_depth(sparse_depth, pseudo_depth, threshold=1)

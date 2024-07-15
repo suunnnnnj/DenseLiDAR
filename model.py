@@ -17,16 +17,16 @@ class DenseLiDAR(Module):
         self.processing = ip_basic
         self.rectification = rectify_depth
         self.DCU = depthCompletionNew_blockN(bs)
-        self.mask = maskFt()
-        self.mul = multiply_output
 
     def forward(self, image, sparse, sparse_path):
-        pseudo_depth_map = self.processing(sparse_path)
+        pseudo_depth_map = self.processing(sparse_path).to(device)
         rectified_depth = self.rectification(sparse, pseudo_depth_map)
-        output_normal, output_concat = self.DCU(image.to(device), torch.tensor(pseudo_depth_map).to(device), torch.tensor(rectified_depth).to(device))
-        output_concat2_processed = self.mask(output_concat)
-        result = self.mul(output_concat2_processed)
-        return result
+        dense, attention = self.DCU(image, pseudo_depth_map, rectified_depth)
+
+        residual = dense - sparse
+        final_dense_depth = pseudo_depth_map + residual
+
+        return final_dense_depth
 
 def set_data():
     current_dir = os.path.dirname(os.path.abspath(__file__))  # Specify your data path here
@@ -36,6 +36,8 @@ def set_data():
     sparse_path = lidars[0]
     output_path = 'result/sample1.png'  # Output image
     sparse, image = tensor_transform(sparse_path, image_path)
+    image = image.to(device)
+    sparse = sparse.to(device)
 
     return sparse, image, sparse_path
 
@@ -48,9 +50,9 @@ if __name__ == "__main__":
 
     # 모델 forward pass
     with torch.no_grad():
-        output = model(image, sparse, sparse_path)
+        final_dense_depth = model(image, sparse, sparse_path)
 
     # 확인을 위한 결과 시각화
     import matplotlib.pyplot as plt
-    plt.imshow(output, 'gray')
+    plt.imshow(final_dense_depth.cpu().squeeze(), 'gray')
     plt.show()
