@@ -7,21 +7,30 @@ import png
 import torch
 from Submodules.ip_basic.ip_basic_utils import depth_map_utils
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-
 def ip_basic(projected_depths):
-    """Depth maps are saved to the 'outputs' folder."""
+    """깊이 맵이 'outputs' 폴더에 저장됩니다."""
+
+    # 디버깅 문구
+    print("fill_in_fast 호출 전:")
+    print(f"projected_depths의 타입: {type(projected_depths)}")
+    print(f"projected_depths의 형상: {projected_depths.shape if isinstance(projected_depths, np.ndarray) else 'NumPy 배열이 아님'}")
+
+    # projected_depths가 NumPy 배열인지 확인
+    if not isinstance(projected_depths, np.ndarray):
+        projected_depths = np.array(projected_depths).squeeze()
+
+    print("필요한 경우 NumPy 배열로 변환 후:")
+    print(f"projected_depths의 타입: {type(projected_depths)}")
+    print(f"projected_depths의 형상: {projected_depths.shape}\n\n")
 
     ##############################
-    # Options
+    # 옵션
     ##############################
 
-    # Validation set
+    # 검증 세트
     data_split = 'val'
 
-    # Test set
+    # 테스트 세트
     # data_split = 'test'
     
     fill_type = 'fast'
@@ -35,7 +44,7 @@ def ip_basic(projected_depths):
         final_depths, process_dict = depth_map_utils.fill_in_multiscale(
             projected_depths, extrapolate=extrapolate, blur_type=blur_type)
     else:
-        raise ValueError('Invalid fill_type {}'.format(fill_type))
+        raise ValueError('유효하지 않은 fill_type: {}'.format(fill_type))
 
     final_depths = torch.from_numpy(final_depths).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
 

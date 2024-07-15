@@ -11,24 +11,26 @@ from Submodules.tensor_transform import tensor_transform, multiply_output
 from sample_dataloader.dataLoader import dataloader
 
 class DenseLiDAR(Module):
-    def __init__(self,bs):
+    def __init__(self, bs):
         super().__init__()
         self.bs = bs
         self.processing = ip_basic
         self.rectification = rectify_depth
         self.DCU = depthCompletionNew_blockN(bs)
 
-    def forward(self, image, sparse, sparse_path):
-        pseudo_depth_map = self.processing(sparse_path).to(device)
-        rectified_depth = self.rectification(sparse, pseudo_depth_map)
-        dense, attention = self.DCU(image, pseudo_depth_map, rectified_depth)
+    def forward(self, image, sparse, device):
+        sparse = sparse.cpu().numpy().squeeze()
+        pseudo_depth_map = self.processing(sparse)
+        sparse = torch.tensor(sparse).to(device)
+        rectified_depth = self.rectification(sparse.to(device), pseudo_depth_map.to(device))
+        dense, attention = self.DCU(image.to(device), pseudo_depth_map.to(device), rectified_depth.to(device))
 
         residual = dense - sparse
-        final_dense_depth = pseudo_depth_map + residual
+        final_dense_depth = pseudo_depth_map.to(device) + residual
 
-        return final_dense_depth
+        return final_dense_depth, pseudo_depth_map
 
-def set_data():
+def set_data(device):
     current_dir = os.path.dirname(os.path.abspath(__file__))  # Specify your data path here
     images, lidars, gt = dataloader(current_dir)
 
@@ -46,11 +48,11 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = DenseLiDAR(bs=1).to(device)
 
-    sparse, image, sparse_path = set_data()
+    sparse, image, sparse_path = set_data(device)
 
     # 모델 forward pass
     with torch.no_grad():
-        final_dense_depth = model(image, sparse, sparse_path)
+        final_dense_depth = model(image, sparse, sparse_path, device)
 
     # 확인을 위한 결과 시각화
     import matplotlib.pyplot as plt

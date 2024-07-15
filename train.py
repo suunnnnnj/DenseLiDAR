@@ -9,31 +9,41 @@ from torchvision.transforms import transforms
 
 from Submodules.DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN, maskFt
 from Submodules.DCU.submodels.total_loss import total_loss
+from Submodules.DCU.submodels.L1_Structural_loss import l_structural 
+from Submodules.DCU.submodels.L2_depth_loss import L2_depth_loss
 from Submodules.data_rectification import rectify_depth
 from Submodules.ip_basic.depth_completion import ip_basic
 from denselidar import tensor_transform
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
-
-def train(model, train_loader, criterion, optimizer, epoch):
+def train(model, train_loader, optimizer, epoch, device):
     model.train()
     running_loss = 0.0
     for i, data in enumerate(train_loader):
-        annotated_image = data['annotated_image'].cuda()
-        velodyne_image = data['velodyne_image'].cuda()
-        raw_image = data['raw_image'].cuda()
+        annotated_image = data['annotated_image'].to(device)
+        velodyne_image = data['velodyne_image'].to(device)
+        raw_image = data['raw_image'].to(device)
         targets = annotated_image
-        pseudo_gt_map = ip_basic(targets)
-        pseudo_depth_map = ip_basic(velodyne_image)
+
+        # targets를 numpy 배열로 변환
+        targets_np = targets.cpu().numpy()
+
+        # 3채널 이미지를 그레이스케일로 변환
+        targets_np_gray = cv2.cvtColor(targets_np[0].transpose(1, 2, 0), cv2.COLOR_RGB2GRAY)
+        # np.float32로 변환
+        print("train pseudo gt map")
+        pseudo_gt_map = ip_basic(np.float32(targets_np_gray / 256.0))
 
         optimizer.zero_grad()
 
-        dense_pseudo_depth, residual_depth_prediction = model(raw_image, velodyne_image, pseudo_depth_map)  # sparse_path_placeholder는 실제 경로로 교체해야 합니다.
-        dense_pseudo_depth = dense_pseudo_depth.unsqueeze(1).cuda()  # (B, H, W) -> (B, 1, H, W)
-        residual_depth_prediction = residual_depth_prediction.unsqueeze(1).cuda()  # (B, H, W) -> (B, 1, H, W)
-        dense_target = pseudo_gt_map
-        loss = criterion(dense_target, targets, dense_pseudo_depth)
+        dense_pseudo_depth, pseudo_depth_map = model(raw_image, velodyne_image, device) 
+        dense_pseudo_depth = dense_pseudo_depth.to(device)  # (B, H, W) -> (B, 1, H, W)
+        dense_target = torch.tensor(pseudo_gt_map).to(device)  # GPU로 이동
+        print(f"VType: {dense_pseudo_depth.dtype}, VShape: {dense_pseudo_depth.shape}")
+        print(f"VType: {dense_target.dtype}, VShape: {dense_target.shape}")
+
+        loss = total_loss(dense_target, targets, dense_pseudo_depth)
         loss.backward()
         optimizer.step()
 
@@ -43,26 +53,33 @@ def train(model, train_loader, criterion, optimizer, epoch):
             print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.4f}")
             running_loss = 0.0
 
-
-# validation 수정 예정
-def validate(model, val_loader, criterion, epoch):
+def validate(model, val_loader, epoch, device):
     model.eval()
     val_loss = 0.0
     with torch.no_grad():
         for i, data in enumerate(val_loader):
-            annotated_image = data['annotated_image'].cuda()
-            velodyne_image = data['velodyne_image'].cuda()
-            raw_image = data['raw_image'].cuda()
-            pseudo_gt_map = ip_basic(annotated_image)
-            pseudo_depth_map = ip_basic(velodyne_image)
+            annotated_image = data['annotated_image'].to(device)
+            velodyne_image = data['velodyne_image'].to(device)
+            raw_image = data['raw_image'].to(device)
+
+            # targets를 numpy 배열로 변환
+            targets_np = annotated_image.cpu().numpy()
+
+            # 3채널 이미지를 그레이스케일로 변환
+            targets_np_gray = cv2.cvtColor(targets_np[0].transpose(1, 2, 0), cv2.COLOR_RGB2GRAY)
+            # np.float32로 변환
+            print("val pseudo gt map")
+            pseudo_gt_map = ip_basic(np.float32(targets_np_gray / 256.0))
+            print("val pseudo depth map")
+            pseudo_depth_map = ip_basic(velodyne_image.cpu().numpy().squeeze())
             
-            dense_pseudo_depth = model(raw_image, velodyne_image, pseudo_depth_map)
+            dense_pseudo_depth = model(raw_image, velodyne_image, device)
             
-            dense_pseudo_depth = dense_pseudo_depth.unsqueeze(1).cuda()  # (B, H, W) -> (B, 1, H, W)
+            dense_pseudo_depth = dense_pseudo_depth.unsqueeze(1).to(device)  # (B, H, W) -> (B, 1, H, W)
             
-            dense_target = pseudo_gt_map
+            dense_target = torch.tensor(pseudo_gt_map).to(device)  # GPU로 이동
             
-            loss = criterion(dense_target, annotated_image, dense_pseudo_depth)
+            loss = total_loss(dense_target, annotated_image, dense_pseudo_depth)
             val_loss += loss.item()
 
     avg_val_loss = val_loss / len(val_loader)
@@ -76,7 +93,6 @@ def save_model(model, optimizer, epoch, path):
         'optimizer_state_dict': optimizer.state_dict(),
     }, path)
 
-
 def main():
     # Paths
     root_dir = 'datasets/'
@@ -87,15 +103,15 @@ def main():
     ])
 
     train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True, num_workers=4)
 
     val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
-    val_loader = DataLoader(val_dataset, batch_size=4, shuffle=False, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=4)
 
     # define model, loss function, optimizer
-    model = DenseLiDAR(bs=4).cuda()
-    criterion = total_loss()  # loss 수정 예정
-    optimizer = optim.Adam(model.parameters(), lr=0.001)  # optimizer 수정 예정
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = DenseLiDAR(bs=1).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     best_val_loss = float('inf')
     best_epoch = 0
@@ -104,8 +120,8 @@ def main():
 
     num_epochs = 20
     for epoch in range(num_epochs):
-        train(model, train_loader, criterion, optimizer, epoch)
-        val_loss = validate(model, val_loader, criterion, epoch)
+        train(model, train_loader, optimizer, epoch, device)
+        val_loss = validate(model, val_loader, epoch, device)
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -123,7 +139,6 @@ def main():
 
     print(f'Best model saved at epoch {best_epoch} with validation loss: {best_val_loss:.4f}')
     print('Training Finished')
-
 
 if __name__ == '__main__':
     main()

@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
-from torchvision.transfroms.functional import rgb_to_grayscale
+from torchvision.transforms.functional import rgb_to_grayscale
 from torchvision import transforms
 
 #L1 Structural Loss
@@ -18,7 +18,10 @@ def l_grad(D, D_pred):
     grad_y_true = gradient_y(D)
     grad_x_pred = gradient_x(D_pred)
     grad_y_pred = gradient_y(D_pred)
-    
+    print(grad_x_true.shape)
+    print(grad_y_true.shape)
+    print(grad_x_pred.shape)
+    print(grad_y_pred.shape)
     grad_loss = torch.mean(torch.abs(grad_x_true - grad_x_pred) + torch.abs(grad_y_true - grad_y_pred))
     return grad_loss
 
