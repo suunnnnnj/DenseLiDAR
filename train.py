@@ -24,14 +24,15 @@ def train(model, train_loader, criterion, optimizer, epoch):
         velodyne_image = data['velodyne_image'].cuda()
         raw_image = data['raw_image'].cuda()
         targets = annotated_image
+        pseudo_gt_map = ip_basic(targets)
+        pseudo_depth_map = ip_basic(velodyne_image)
 
         optimizer.zero_grad()
 
-        dense_pseudo_depth, residual_depth_prediction = model(raw_image, velodyne_image,
-                                                              "pseudo depth map")  # sparse_path_placeholder는 실제 경로로 교체해야 합니다.
+        dense_pseudo_depth, residual_depth_prediction = model(raw_image, velodyne_image, pseudo_depth_map)  # sparse_path_placeholder는 실제 경로로 교체해야 합니다.
         dense_pseudo_depth = dense_pseudo_depth.unsqueeze(1).cuda()  # (B, H, W) -> (B, 1, H, W)
         residual_depth_prediction = residual_depth_prediction.unsqueeze(1).cuda()  # (B, H, W) -> (B, 1, H, W)
-        # dense_target = pseudo gt map
+        dense_target = pseudo_gt_map
         loss = criterion(dense_target, targets, dense_pseudo_depth)
         loss.backward()
         optimizer.step()
@@ -52,21 +53,21 @@ def validate(model, val_loader, criterion, epoch):
             annotated_image = data['annotated_image'].cuda()
             velodyne_image = data['velodyne_image'].cuda()
             raw_image = data['raw_image'].cuda()
-
-            dense_pseudo_depth, residual_depth_prediction = model(raw_image, velodyne_image, "pseudo depth map")
-
+            pseudo_gt_map = ip_basic(annotated_image)
+            pseudo_depth_map = ip_basic(velodyne_image)
+            
+            dense_pseudo_depth = model(raw_image, velodyne_image, pseudo_depth_map)
+            
             dense_pseudo_depth = dense_pseudo_depth.unsqueeze(1).cuda()  # (B, H, W) -> (B, 1, H, W)
-            residual_depth_prediction = residual_depth_prediction.unsqueeze(1).cuda()  # (B, H, W) -> (B, 1, H, W)
-
-            # dense_target = pseudo gt map
-
-            loss = criterion(dense_target, annotated_image, residual_depth_prediction)
+            
+            dense_target = pseudo_gt_map
+            
+            loss = criterion(dense_target, annotated_image, dense_pseudo_depth)
             val_loss += loss.item()
 
     avg_val_loss = val_loss / len(val_loader)
     print(f"Epoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
     return avg_val_loss
-
 
 def save_model(model, optimizer, epoch, path):
     torch.save({
@@ -78,7 +79,7 @@ def save_model(model, optimizer, epoch, path):
 
 def main():
     # Paths
-    root_dir = 'path_to_kitti_dataset'
+    root_dir = 'datasets/'
 
     # Dataset과 DataLoader 설정
     train_transform = transforms.Compose([
