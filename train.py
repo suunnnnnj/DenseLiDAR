@@ -5,6 +5,7 @@ import numpy as np
 from torch.nn import Module
 
 from Submodules.DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN, maskFt
+from Submodules.DCU.submodels.total_loss import total_loss
 from Submodules.data_rectification import rectify_depth
 from Submodules.ip_basic.depth_completion import ip_basic
 from denselidar import tensor_transform
@@ -25,7 +26,7 @@ def train(model, train_loader, criterion, optimizer, epoch):
         dense_pseudo_depth = torch.tensor(dense_pseudo_depth).unsqueeze(0).unsqueeze(0).cuda()  # (H, W) -> (1, 1, H, W)
         residual_depth_prediction =  torch.tensor(residual_depth_prediction).unsqueeze(0).unsqueeze(0).cuda() 
         #dense_target = pseudo gt map
-        loss = criterion(dense_pseudo_depth, residual_depth_prediction, dense_targets, targets)
+        loss = criterion(dense_target, targets, dense_pseudo_depth)
         loss.backward()
         optimizer.step()
 
@@ -74,7 +75,7 @@ def main():
 
     # define model, loss function, optimizer
     model = DenseLiDAR(bs=4).cuda()
-    criterion = nn.MSELoss() #loss 수정 예정
+    criterion = total_loss() #loss 수정 예정
     optimizer = optim.Adam(model.parameters(), lr=0.001) #optimizer 수정 예정
 
     
