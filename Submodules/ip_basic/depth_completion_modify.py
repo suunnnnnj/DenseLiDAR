@@ -13,7 +13,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-def ip_basic(sparse_depth):
+def ip_basic_m(sparse_depth):
     """Depth maps are saved to the 'outputs' folder."""
 
     ##############################

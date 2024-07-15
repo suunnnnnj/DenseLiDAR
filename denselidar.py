@@ -20,6 +20,8 @@ from Submodules.DCU.submodels.depthCompletionNew_blockN import depthCompletionNe
 from Submodules.data_rectification import rectify_depth
 from Submodules.ip_basic.depth_completion import ip_basic
 
+
+
 if __name__ == '__main__':
     # Use the dataloader to load the data
     current_dir = os.path.dirname(os.path.abspath(__file__)) # Specify your data path here
@@ -31,10 +33,23 @@ if __name__ == '__main__':
     output_path = 'result/sample1.png'  # Output image
     gt_path = gt[0]
     # making pseudo depth map, pseudo GT Map
+    depth_image_path = sparse_depth_path
+    depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
+    projected_depths = np.float32(depth_image / 256.0)
+
+    depth_image_path = gt_path
+    depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
+    projected_gt = np.float32(depth_image / 256.0)
+
     print("pseudo_depth_map")
-    pseudo_depth = ip_basic(sparse_depth_path)
+
+
+    pseudo_depth = ip_basic(projected_depths)
+    import matplotlib.pyplot as plt
+    plt.imshow(pseudo_depth.squeeze())
+    plt.show()
     print("pseudo_gt_map")
-    pseudo_GT_Map = ip_basic(gt_path)
+    pseudo_GT_Map = ip_basic(projected_gt)
 
     # Transform tensor
     sparse_depth, left_image = tensor_transform(sparse_depth_path, left_image_path)
