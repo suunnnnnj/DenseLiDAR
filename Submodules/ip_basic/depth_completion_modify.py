@@ -7,7 +7,7 @@ import png
 import torch
 from PIL import Image
 import torchvision.transforms as transforms
-from Submodules.ip_basic.ip_basic_utils import depth_map_utils
+from ip_basic_utils import depth_map_utils
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -109,7 +109,7 @@ def load_image_as_tensor(image_path):
     return image_tensor
     
 # Example
-image_path = '/home/mobiltech/ip_basic/Kitti/depth/val_selection_cropped/velodyne_raw/2011_09_26_drive_0002_sync_velodyne_raw_0000000005_image_02.png'
+image_path = '/home/mobiltech/Desktop/Test/SSDC/Submodules/ip_basic/0000000005.png'
 
 image_tensor = load_image_as_tensor(image_path)
 
