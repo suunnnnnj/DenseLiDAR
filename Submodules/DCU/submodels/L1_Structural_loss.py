@@ -6,10 +6,13 @@ from torchvision import transforms
 
 #L1 Structural Loss
 def gradient_x(img):
+    img = F.pad(img, (0, 0, 1, 0), mode='replicate')
     gx = img[:, :, :-1, :] - img[:, :, 1:, :]
     return gx
 
+# HAVE SOME PROBLEM!!!! 
 def gradient_y(img):
+    img = F.pad(img, (1, 0, 0, 0), mode='replicate')
     gy = img[:, :, :, :-1] - img[:, :, :, 1:]
     return gy
 
