@@ -4,6 +4,7 @@ import time
 import cv2
 import numpy as np
 import png
+import torch
 from Submodules.ip_basic.ip_basic_utils import depth_map_utils
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -93,5 +94,6 @@ def ip_basic(sparse_depth_path):
                                 greyscale=True)
             writer.write(f, depth_image)
 
-    return final_depths
+    final_depths = torch.from_numpy(final_depths).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
 
+    return final_depths

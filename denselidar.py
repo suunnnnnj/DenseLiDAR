@@ -12,23 +12,13 @@ import torch
 import numpy as np
 import cv2
 import os
+
+from Submodules.tensor_transform import tensor_transform
 from sample_dataloader.dataLoader import dataloader  # Import the dataloader function
 
 from Submodules.DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN, maskFt
 from Submodules.data_rectification import rectify_depth
 from Submodules.ip_basic.depth_completion import ip_basic
-
-
-def tensor_transform(sparse_depth_path, pseudo_depth_map, left_image_path, pseudo_gt_map):
-    sparse_depth_np = cv2.imread(sparse_depth_path, cv2.IMREAD_GRAYSCALE).astype(np.float32)
-    left_image_np = cv2.imread(left_image_path).astype(np.float32)
-
-    sparse_depth = torch.from_numpy(sparse_depth_np).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
-    pseudo_depth = torch.from_numpy(pseudo_depth_map).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
-    pseudo_gt = torch.from_numpy(pseudo_gt_map).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
-    left_image = torch.from_numpy(left_image_np).permute(2, 0, 1).unsqueeze(0)  # (1, 3, H, W)
-
-    return sparse_depth, pseudo_depth, left_image, pseudo_gt
 
 if __name__ == '__main__':
     # Use the dataloader to load the data
@@ -42,15 +32,13 @@ if __name__ == '__main__':
     gt_path = gt[0]
     # making pseudo depth map, pseudo GT Map
     print("pseudo_depth_map")
-    pseudo_depth_map = ip_basic(sparse_depth_path)
+    pseudo_depth = ip_basic(sparse_depth_path)
     print("pseudo_gt_map")
     pseudo_GT_Map = ip_basic(gt_path)
 
     # Transform tensor
-    sparse_depth, pseudo_depth, left_image, pseudo_GT_Map = tensor_transform(sparse_depth_path,
-                                                                             pseudo_depth_map.astype(np.float32),
-                                                                             left_image_path,
-                                                                             pseudo_GT_Map.astype(np.float32))
+    sparse_depth, left_image = tensor_transform(sparse_depth_path,
+                                                               left_image_path)
 
     # Rectified depth
     rectified_depth = rectify_depth(sparse_depth, pseudo_depth, threshold=1)
