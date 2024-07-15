@@ -1,28 +1,55 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
+from torchvision.transfroms.functional import rgb_to_grayscale
+from torchvision import transforms
 
-def mse_loss(input, target):
-    return torch.sum((input - target)**2) / input.data.nelement()
+#L1 Structural Loss
+def gradient_x(img):
+    gx = img[:, :, :-1, :] - img[:, :, 1:, :]
+    return gx
 
-def total_loss(pred, predN, target):
-    valid_mask = (target > 0.0).detach()
-    pred = pred.permute(0, 2, 3, 1)
-    predN = predN.permute(0, 2, 3, 1)
+def gradient_y(img):
+    gy = img[:, :, :, :-1] - img[:, :, :, 1:]
+    return gy
 
-    pred_n = pred[valid_mask]
-    predN_n = predN[valid_mask]
-    target_n = target[valid_mask]
+def l_grad(D, D_pred):
+    grad_x_true = gradient_x(D)
+    grad_y_true = gradient_y(D)
+    grad_x_pred = gradient_x(D_pred)
+    grad_y_pred = gradient_y(D_pred)
+    
+    grad_loss = torch.mean(torch.abs(grad_x_true - grad_x_pred) + torch.abs(grad_y_true - grad_y_pred))
+    return grad_loss
 
-    loss3 = mse_loss(predN_n, target_n)
-    loss1_function = torch.nn.MSELoss(reduction='mean')
-    loss1 =  loss1_function(pred_n, target_n)
+def ssim(img1, img2):
+    C1 = 0.01 ** 2
+    C2 = 0.03 ** 2
 
-    loss = 0.5 * loss1 + 0.3 * loss3
+    mu1 = F.avg_pool2d(img1, 3, 1, 0)
+    mu2 = F.avg_pool2d(img2, 3, 1, 0)
 
-    return loss, loss1, loss3
+    mu1_sq = mu1 ** 2
+    mu2_sq = mu2 ** 2
+    mu1_mu2 = mu1 * mu2
 
-def mae(gt, img):
-    dif = gt[np.where(gt > 0.0)] - img[np.where(gt > 0.0)]
-    error = np.mean(np.fabs(dif))
-    return error
+    sigma1_sq = F.avg_pool2d(img1 * img1, 3, 1, 0) - mu1_sq
+    sigma2_sq = F.avg_pool2d(img2 * img2, 3, 1, 0) - mu2_sq
+    sigma12 = F.avg_pool2d(img1 * img2, 3, 1, 0) - mu1_mu2
+
+    ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
+    return ssim_map.mean()
+
+def l_ssim(D, D_pred):
+    ssim_loss = 1 - ssim(D, D_pred)
+    return ssim_loss
+
+def l_structural(D, D_pred):
+    lambda_grad = 1.0
+    lambda_ssim = 1.0
+    
+    grad_loss = l_grad(D, D_pred)
+    ssim_loss = l_ssim(D, D_pred)
+    
+    structural_loss = lambda_grad * grad_loss + lambda_ssim * ssim_loss
+    return structural_loss
