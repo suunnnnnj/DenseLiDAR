@@ -40,11 +40,12 @@ if __name__ == '__main__':
     output_path = 'result/sample1.png'  # Output image
     pseudo_depth_path = depths[0]
 
-    # making pseudo depth map
+    # making pseudo depth map, pseudo GT Map
     pseudo_depth_map = ip_basic(sparse_depth_path)
+    pseudo_GT_Map = ip_basic(pseudo_depth_path)
 
     # Transform tensor
-    sparse_depth, pseudo_depth, left_image = tensor_transform(sparse_depth_path, pseudo_depth_map.astype(np.float32), left_image_path)
+    sparse_depth, pseudo_depth, left_image, pseudo_GT_Map = tensor_transform(sparse_depth_path, pseudo_depth_map.astype(np.float32), left_image_path, pseudo_GT_Map(np.float32))
 
     # Rectified depth
     rectified_depth = rectify_depth(sparse_depth, pseudo_depth, threshold=1)
@@ -57,6 +58,7 @@ if __name__ == '__main__':
     rectified_depth = rectified_depth.to(device)
     pseudo_depth = pseudo_depth.to(device)
     left_image = left_image.to(device)
+    pseudo_GT_Map = pseudo_GT_Map.to(device)
 
     sparse2 = rectified_depth
     mask = pseudo_depth
