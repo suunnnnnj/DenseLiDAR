@@ -16,10 +16,8 @@ def ip_basic(sparse_depth_path):
     ##############################
     # Options
     ##############################
-    data_path = os.path.dirname(os.path.dirname(current_dir))
-
-    input_depth_dir = os.path.dirname(os.path.join(data_path, sparse_depth_path))
-    print("input_depth_dir: " + input_depth_dir)
+    # Validation set
+    input_depth_dir = os.path.dirname(sparse_depth_path)
     data_split = 'val'
 
     fill_type = 'fast'

@@ -18,34 +18,39 @@ from Submodules.DCU.submodels.depthCompletionNew_blockN import depthCompletionNe
 from Submodules.data_rectification import rectify_depth
 from Submodules.ip_basic.depth_completion import ip_basic
 
-def tensor_transform(sparse_depth_path, pseudo_depth_map, left_image_path):
-    current_path = os.path.dirname(os.path.abspath(__file__))
-    sparse_depth_np = cv2.imread(os.path.join(current_path, sparse_depth_path), cv2.IMREAD_GRAYSCALE).astype(np.float32)
-    left_image_np = cv2.imread(os.path.join(current_path, left_image_path)).astype(np.float32)
+
+def tensor_transform(sparse_depth_path, pseudo_depth_map, left_image_path, pseudo_gt_map):
+    sparse_depth_np = cv2.imread(sparse_depth_path, cv2.IMREAD_GRAYSCALE).astype(np.float32)
+    left_image_np = cv2.imread(left_image_path).astype(np.float32)
 
     sparse_depth = torch.from_numpy(sparse_depth_np).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
     pseudo_depth = torch.from_numpy(pseudo_depth_map).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
+    pseudo_gt = torch.from_numpy(pseudo_gt_map).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
     left_image = torch.from_numpy(left_image_np).permute(2, 0, 1).unsqueeze(0)  # (1, 3, H, W)
 
-    return sparse_depth, pseudo_depth, left_image
+    return sparse_depth, pseudo_depth, left_image, pseudo_gt
 
 if __name__ == '__main__':
     # Use the dataloader to load the data
-    datapath = './'  # Specify your data path here
-    images, lidars, depths = dataloader(datapath)
+    current_dir = os.path.dirname(os.path.abspath(__file__)) # Specify your data path here
+    images, lidars, gt = dataloader(current_dir)
 
     # Assuming we are using the first set of files for this example
     left_image_path = images[0]
     sparse_depth_path = lidars[0]
     output_path = 'result/sample1.png'  # Output image
-    pseudo_depth_path = depths[0]
-
+    gt_path = gt[0]
     # making pseudo depth map, pseudo GT Map
+    print("pseudo_depth_map")
     pseudo_depth_map = ip_basic(sparse_depth_path)
-    pseudo_GT_Map = ip_basic(pseudo_depth_path)
+    print("pseudo_gt_map")
+    pseudo_GT_Map = ip_basic(gt_path)
 
     # Transform tensor
-    sparse_depth, pseudo_depth, left_image, pseudo_GT_Map = tensor_transform(sparse_depth_path, pseudo_depth_map.astype(np.float32), left_image_path, pseudo_GT_Map(np.float32))
+    sparse_depth, pseudo_depth, left_image, pseudo_GT_Map = tensor_transform(sparse_depth_path,
+                                                                             pseudo_depth_map.astype(np.float32),
+                                                                             left_image_path,
+                                                                             pseudo_GT_Map.astype(np.float32))
 
     # Rectified depth
     rectified_depth = rectify_depth(sparse_depth, pseudo_depth, threshold=1)

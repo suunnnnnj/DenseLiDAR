@@ -18,7 +18,7 @@ def dataloader(filepath):
 
     image_path = os.path.join(filepath, 'sample_data/image')
     lidar_path = os.path.join(filepath, 'sample_data/lidar')
-    depth_path = os.path.join(filepath, 'sample_data/groundtruth')
+    gt_path = os.path.join(filepath, 'sample_data/groundtruth')
 
     # Load image files
     for img_file in os.listdir(image_path):
@@ -30,14 +30,15 @@ def dataloader(filepath):
         lidars.append(os.path.join(lidar_path, lidar_file))
 
     # Load depth files
-    for depth_file in os.listdir(depth_path):
-        depths.append(os.path.join(depth_path, depth_file))
+    for depth_file in os.listdir(gt_path):
+        depths.append(os.path.join(gt_path, depth_file))
 
     # Sort the files to ensure correct ordering
     images.sort()
     lidars.sort()
     depths.sort()
 
+    print('Data is Loaded !!')
     return images, lidars, depths
 
 if __name__ == '__main__':
