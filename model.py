@@ -9,19 +9,19 @@ from Submodules.data_rectification import rectify_depth
 from Submodules.ip_basic.depth_completion import ip_basic
 from Submodules.tensor_transform import tensor_transform, multiply_output
 from sample_dataloader.dataLoader import dataloader
+from Submodules.ip_basic.custom_ip import interpolate_depth_map
 
 class DenseLiDAR(Module):
     def __init__(self, bs):
         super().__init__()
         self.bs = bs
-        self.processing = ip_basic
+        self.processing = interpolate_depth_map
         self.rectification = rectify_depth
         self.DCU = depthCompletionNew_blockN(bs)
 
     def forward(self, image, sparse, device):
-        sparse = sparse.cpu().numpy().squeeze()
+        # sparse = torch.tensor(sparse).to(device).squeeze()
         pseudo_depth_map = self.processing(sparse)
-        sparse = torch.tensor(sparse).to(device)
         rectified_depth = self.rectification(sparse.to(device), pseudo_depth_map.to(device))
         dense, attention = self.DCU(image.to(device), pseudo_depth_map.to(device), rectified_depth.to(device))
 

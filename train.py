@@ -13,7 +13,7 @@ from Submodules.DCU.submodels.total_loss import total_loss
 from Submodules.DCU.submodels.L1_Structural_loss import l_structural 
 from Submodules.DCU.submodels.L2_depth_loss import L2_depth_loss
 from Submodules.data_rectification import rectify_depth
-from Submodules.ip_basic.depth_completion import ip_basic
+from Submodules.ip_basic.custom_ip import interpolate_depth_map
 from denselidar import tensor_transform
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
@@ -27,13 +27,8 @@ def train(model, train_loader, optimizer, epoch, device):
         raw_image = data['raw_image'].to(device)
         targets = annotated_image
 
-        # targets를 numpy 배열로 변환
-        targets_np = targets.cpu().numpy()
-
-        # 3채널 이미지를 그레이스케일로 변환
-        targets_np_gray = cv2.cvtColor(targets_np[0].transpose(1, 2, 0), cv2.COLOR_RGB2GRAY)
         # np.float32로 변환
-        pseudo_gt_map = ip_basic(np.float32(targets_np_gray / 256.0))
+        pseudo_gt_map = interpolate_depth_map(targets)
 
         optimizer.zero_grad()
 
@@ -57,15 +52,10 @@ def validate(model, val_loader, epoch, device):
             annotated_image = data['annotated_image'].to(device)
             velodyne_image = data['velodyne_image'].to(device)
             raw_image = data['raw_image'].to(device)
-
-            # targets를 numpy 배열로 변환
-            targets_np = annotated_image.cpu().numpy()
-
-            # 3채널 이미지를 그레이스케일로 변환
-            targets_np_gray = cv2.cvtColor(targets_np[0].transpose(1, 2, 0), cv2.COLOR_RGB2GRAY)
-            # np.float32로 변환
-            pseudo_gt_map = ip_basic(np.float32(targets_np_gray / 256.0))
-            pseudo_depth_map = ip_basic(velodyne_image.cpu().numpy().squeeze())
+            targets = annotated_image
+            
+            pseudo_gt_map = interpolate_depth_map(targets)
+            pseudo_depth_map = interpolate_depth_map(velodyne_image)
             
             dense_pseudo_depth = model(raw_image, velodyne_image, device)
             
@@ -98,14 +88,14 @@ def main():
     ])
 
     train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
-    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=4)
 
     val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
-    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=4)
 
     # define model, loss function, optimizer
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = DenseLiDAR(bs=1).to(device)
+    model = DenseLiDAR(bs=2).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     best_val_loss = float('inf')
@@ -113,7 +103,7 @@ def main():
     best_model_state = None
     best_optimizer_state = None
 
-    num_epochs = 20
+    num_epochs = 100
     for epoch in range(num_epochs):
         train(model, train_loader, optimizer, epoch, device)
         val_loss = validate(model, val_loader, epoch, device)

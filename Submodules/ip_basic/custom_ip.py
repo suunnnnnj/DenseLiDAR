@@ -7,13 +7,13 @@ from scipy.interpolate import griddata
 import torch.nn.functional as F
 
 def interpolate_depth_map(sparse_depth):
-    batch_size, height, width = sparse_depth.shape
+    batch_size, channel, height, width = sparse_depth.shape
     dense_depth = torch.zeros_like(sparse_depth)
     
     for i in range(batch_size):
         sparse_depth_np = sparse_depth[i].cpu().numpy()
         
-        x, y = np.where(sparse_depth_np > 0)
+        _, x, y = np.where(sparse_depth_np > 0)
         z = sparse_depth_np[sparse_depth_np > 0]
         
         grid_x, grid_y = np.mgrid[0:height, 0:width]

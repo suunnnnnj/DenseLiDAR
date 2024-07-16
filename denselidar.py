@@ -18,7 +18,8 @@ from sample_dataloader.dataLoader import dataloader  # Import the dataloader fun
 
 from Submodules.DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN, maskFt
 from Submodules.data_rectification import rectify_depth
-from Submodules.ip_basic.depth_completion import ip_basic
+#from Submodules.ip_basic.depth_completion import ip_basic
+from Submodules.ip_basic.custom_ip import interpolate_depth_map
 
 
 
@@ -44,12 +45,12 @@ if __name__ == '__main__':
     print("pseudo_depth_map")
 
 
-    pseudo_depth = ip_basic(projected_depths)
+    pseudo_depth = interpolate_depth_map(projected_depths)
     import matplotlib.pyplot as plt
     plt.imshow(pseudo_depth.squeeze())
     plt.show()
     print("pseudo_gt_map")
-    pseudo_GT_Map = ip_basic(projected_gt)
+    pseudo_GT_Map = interpolate_depth_map(projected_gt)
 
     # Transform tensor
     sparse_depth, left_image = tensor_transform(sparse_depth_path, left_image_path)

@@ -32,8 +32,3 @@ def ip_basic(projected_depths):
     final_depths = torch.from_numpy(final_depths).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
 
     return final_depths
-
-img = cv2.imread('test/0000000005.png', cv2.COLOR_BGR2GRAY)
-import matplotlib.pyplot as plt
-
-res = ip_basic(img)
