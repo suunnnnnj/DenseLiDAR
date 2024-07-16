@@ -28,7 +28,7 @@ class DenseLiDAR(Module):
         residual = dense - sparse
         final_dense_depth = pseudo_depth_map.to(device) + residual
 
-        return final_dense_depth, pseudo_depth_map
+        return final_dense_depth
 
 def set_data(device):
     current_dir = os.path.dirname(os.path.abspath(__file__))  # Specify your data path here
