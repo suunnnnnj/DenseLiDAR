@@ -37,7 +37,7 @@ def train(model, train_loader, optimizer, epoch, device):
 
         optimizer.zero_grad()
 
-        dense_pseudo_depth, pseudo_depth_map = model(raw_image, velodyne_image, device) 
+        dense_pseudo_depth = model(raw_image, velodyne_image, device) 
         dense_pseudo_depth = dense_pseudo_depth.to(device)  # (B, H, W) -> (B, 1, H, W)
         dense_target = pseudo_gt_map.clone().detach().to(device)  # GPU로 이동
 
@@ -89,7 +89,7 @@ def save_model(model, optimizer, epoch, path):
 
 def main():
     # Paths
-    root_dir = 'datasets/'
+    root_dir = 'sample/'
 
     # Dataset과 DataLoader 설정
     train_transform = transforms.Compose([
@@ -97,10 +97,10 @@ def main():
     ])
 
     train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True, num_workers=4)
 
     val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=4)
 
     # define model, loss function, optimizer
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
