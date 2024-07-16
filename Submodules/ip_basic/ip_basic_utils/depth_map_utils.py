@@ -8,9 +8,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms
 
-from Submodules.ip_basic.ip_basic_utils.convert_tensor_utils import dilation, erosion
+from Submodules.ip_basic.ip_basic_utils.convert_tensor_utils import dilation, erosion, median_blur_torch, \
+    bilateral_filter
 from Submodules.ip_basic.ip_basic_utils.kernels import *
 
+def visualization(title, d1, d2):
+    plt.suptitle("medianblur")
+    plt.subplot(2, 1, 1)
+    plt.title('cv2')
+    plt.imshow(d1, 'gray')
+
+    plt.subplot(2, 1, 2)
+    plt.title('torch')
+    plt.imshow(d2.squeeze(), 'gray')
+    plt.show()
 
 def fill_in_fast(depth_map, max_depth=100.0, custom_kernel=DIAMOND_KERNEL_5,
                  extrapolate=False, blur_type='bilateral'):
@@ -46,14 +57,7 @@ def fill_in_fast(depth_map, max_depth=100.0, custom_kernel=DIAMOND_KERNEL_5,
 
     depth_map2 = dilation(depth_map2, DIAMOND_KERNEL_5_t)
 
-    plt.subplot(2, 1, 1)
-    plt.title('cv2')
-    plt.imshow(depth_map1, 'gray')
-
-    plt.subplot(2, 1, 2)
-    plt.title('torch')
-    plt.imshow(depth_map2.squeeze(), 'gray')
-    plt.show()
+    visualization("dilation - diamond kernel 5", depth_map1, depth_map2)
 
     # Hole closing
     depth_map1 = cv2.morphologyEx(depth_map1, cv2.MORPH_CLOSE, FULL_KERNEL_5)
@@ -61,45 +65,36 @@ def fill_in_fast(depth_map, max_depth=100.0, custom_kernel=DIAMOND_KERNEL_5,
     depth_map2 = dilation(depth_map2, FULL_KERNEL_5_t)
     depth_map2 = erosion(depth_map2, FULL_KERNEL_5_t)
 
-    plt.subplot(2, 1, 1)
-    plt.title('cv2')
-    plt.imshow(depth_map1, 'gray')
-
-    plt.subplot(2, 1, 2)
-    plt.title('torch')
-    plt.imshow(depth_map2.squeeze(), 'gray')
-    plt.show()
-
-
-
+    visualization("morph_close - full kernel 5", depth_map1, depth_map2)
 
 
     # Fill empty spaces with dilated values
-    empty_pixels = (depth_map < 0.1)
-    dilated = cv2.dilate(depth_map, FULL_KERNEL_7)
-    depth_map[empty_pixels] = dilated[empty_pixels]
+    empty_pixels = (depth_map1 < 0.1)
+    dilated1 = cv2.dilate(depth_map1, FULL_KERNEL_7)
+    depth_map1[empty_pixels] = dilated1[empty_pixels]
 
-    # Extend highest pixel to top of image
-    if extrapolate:
-        top_row_pixels = np.argmax(depth_map > 0.1, axis=0)
-        top_pixel_values = depth_map[top_row_pixels, range(depth_map.shape[1])]
+    empty_pixels = (depth_map2 < 49500)
+    dilated2 = dilation(depth_map2, FULL_KERNEL_7_t)
+    depth_map2[empty_pixels] = dilated2[empty_pixels]
 
-        for pixel_col_idx in range(depth_map.shape[1]):
-            depth_map[0:top_row_pixels[pixel_col_idx], pixel_col_idx] = \
-                top_pixel_values[pixel_col_idx]
-
-        # Large Fill
-        empty_pixels = depth_map < 0.1
-        dilated = cv2.dilate(depth_map, FULL_KERNEL_31)
-        depth_map[empty_pixels] = dilated[empty_pixels]
+    visualization("fill empty space - full kernel 7", depth_map1, depth_map2)
 
     # Median blur
-    depth_map = cv2.medianBlur(depth_map, 5)
+    depth_map1 = cv2.medianBlur(depth_map1, 5)
+    depth_map2 = median_blur_torch(depth_map2, 5)
+
+    visualization("Median blur", depth_map1, depth_map2)
+
 
     # Bilateral or Gaussian blur
     if blur_type == 'bilateral':
         # Bilateral blur
-        depth_map = cv2.bilateralFilter(depth_map, 5, 1.5, 2.0)
+        depth_map1 = depth_map1.astype(np.uint8)
+        depth_map1 = cv2.bilateralFilter(depth_map1, 5, 1.5, 2.0)
+
+        depth_map2 = bilateral_filter(depth_map2, 5, 1.5, 2.0)
+
+
     elif blur_type == 'gaussian':
         # Gaussian blur
         valid_pixels = (depth_map > 0.1)

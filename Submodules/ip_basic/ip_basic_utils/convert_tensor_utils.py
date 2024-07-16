@@ -34,20 +34,19 @@ def bilateral_filter(input, kernel_size, sigma_spatial, sigma_color):
     # Initialize output
     output = torch.zeros_like(input)
 
-    for i in range(input.size(1)):
-        # Extract the i-th channel
-        channel = input_padded[:, i:i+1, :, :]
+    # Extract the i-th channel
+    channel = input_padded[:, 0, :, :]
 
-        # Compute the color distance
-        color_distance = channel - channel.mean(dim=[2, 3], keepdim=True)
-        color_gaussian = torch.exp(-(color_distance**2) / (2 * sigma_color**2))
+    # Compute the color distance
+    color_distance = channel - channel.mean(dim=[2, 3], keepdim=True)
+    color_gaussian = torch.exp(-(color_distance ** 2) / (2 * sigma_color ** 2))
 
-        # Apply the spatial Gaussian filter
-        filtered = F.conv2d(channel * color_gaussian, spatial_gaussian.unsqueeze(0).unsqueeze(0))
+    # Apply the spatial Gaussian filter
+    filtered = F.conv2d(channel * color_gaussian, spatial_gaussian.unsqueeze(0).unsqueeze(0))
 
-        # Normalize the result
-        normalization = F.conv2d(color_gaussian, spatial_gaussian.unsqueeze(0).unsqueeze(0))
-        output[:, i:i+1, :, :] = filtered / normalization
+    # Normalize the result
+    normalization = F.conv2d(color_gaussian, spatial_gaussian.unsqueeze(0).unsqueeze(0))
+    output[:, 0, :, :] = filtered / normalization
 
     return output
 
@@ -117,26 +116,10 @@ def dilation(
     # computation
     neighborhood = torch.zeros_like(kernel)
     neighborhood[kernel == 0] = -max_val
-    """if structuring_element is None:
-        
-    else:
-        neighborhood = structuring_element.clone()
-        neighborhood[kernel == 0] = -max_val"""
 
-
-    """if engine == "unfold":
-        output = output.unfold(2, se_h, 1).unfold(3, se_w, 1)
-        output, _ = torch.max(output + neighborhood.flip((0, 1)), 4)
-        output, _ = torch.max(output, 4)
-    elif engine == "convolution":
-        
-    else:
-        raise NotImplementedError(f"engine {engine} is unknown, use 'convolution' or 'unfold'")"""
     B, C, H, W = tensor.size()
     h_pad, w_pad = output.shape[-2:]
-    print(kernel)
     reshape_kernel = _neight2channels_like_kernel(kernel)
-    print(reshape_kernel)
 
     output, _ = F.conv2d(
         output.view(B * C, 1, h_pad, w_pad), reshape_kernel, padding=0, bias=neighborhood.view(-1).flip(0)

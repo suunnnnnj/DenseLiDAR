@@ -9,6 +9,8 @@ FULL_KERNEL_9 = np.ones((9, 9), np.uint8)
 FULL_KERNEL_31 = np.ones((31, 31), np.uint8)
 
 FULL_KERNEL_5_t = torch.ones((5,5)).to(torch.float32)
+FULL_KERNEL_7_t = torch.ones((7,7)).to(torch.float32)
+FULL_KERNEL_31_t = torch.ones((31,31)).to(torch.float32)
 
 DIAMOND_KERNEL_5 = np.array(
     [
