@@ -8,36 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms
 
-from Submodules.ip_basic.ip_basic_utils.convert_tensor_utils import dilation
-
-# Full kernels
-FULL_KERNEL_3 = np.ones((3, 3), np.uint8)
-FULL_KERNEL_5 = np.ones((5, 5), np.uint8)
-FULL_KERNEL_7 = np.ones((7, 7), np.uint8)
-FULL_KERNEL_9 = np.ones((9, 9), np.uint8)
-FULL_KERNEL_31 = np.ones((31, 31), np.uint8)
-
-FULL_KERNEL_5_t = torch.ones((5,5)).to(torch.float32).unsqueeze(0).unsqueeze(0)
-
-DIAMOND_KERNEL_5 = np.array(
-    [
-        [0, 0, 1, 0, 0],
-        [0, 1, 1, 1, 0],
-        [1, 1, 1, 1, 1],
-        [0, 1, 1, 1, 0],
-        [0, 0, 1, 0, 0],
-    ], dtype=np.uint8)
-
-DIAMOND_KERNEL_5_t = torch.tensor(
-    [
-        [0, 0, 1, 0, 0],
-        [0, 1, 1, 1, 0],
-        [1, 1, 1, 1, 1],
-        [0, 1, 1, 1, 0],
-        [0, 0, 1, 0, 0],
-        ], dtype=torch.float32
-    )
-
+from Submodules.ip_basic.ip_basic_utils.convert_tensor_utils import dilation, erosion
+from Submodules.ip_basic.ip_basic_utils.kernels import *
 
 
 def fill_in_fast(depth_map, max_depth=100.0, custom_kernel=DIAMOND_KERNEL_5,
@@ -74,8 +46,6 @@ def fill_in_fast(depth_map, max_depth=100.0, custom_kernel=DIAMOND_KERNEL_5,
 
     depth_map2 = dilation(depth_map2, DIAMOND_KERNEL_5_t)
 
-    #depth_map2 = dilate(depth_map2, DIAMOND_KERNEL_5_t)
-
     plt.subplot(2, 1, 1)
     plt.title('cv2')
     plt.imshow(depth_map1, 'gray')
@@ -84,21 +54,12 @@ def fill_in_fast(depth_map, max_depth=100.0, custom_kernel=DIAMOND_KERNEL_5,
     plt.title('torch')
     plt.imshow(depth_map2.squeeze(), 'gray')
     plt.show()
-
 
     # Hole closing
-    #depth_map1 = cv2.morphologyEx(depth_map1, cv2.MORPH_CLOSE, FULL_KERNEL_5)
-    depth_map1 = cv2.dilate(depth_map1, FULL_KERNEL_5)
-    depth_map1 = cv2.erode(depth_map1, FULL_KERNEL_5)
+    depth_map1 = cv2.morphologyEx(depth_map1, cv2.MORPH_CLOSE, FULL_KERNEL_5)
 
-
-    #depth_map2 = dilate(depth_map2, FULL_KERNEL_5_t)
-    #depth_map2 = erode(depth_map2, FULL_KERNEL_5_t)
-    #depth_map2 = cv2.erode(depth_map2.numpy().squeeze(), FULL_KERNEL_5)
-
-
-
-
+    depth_map2 = dilation(depth_map2, FULL_KERNEL_5_t)
+    depth_map2 = erosion(depth_map2, FULL_KERNEL_5_t)
 
     plt.subplot(2, 1, 1)
     plt.title('cv2')
@@ -108,9 +69,6 @@ def fill_in_fast(depth_map, max_depth=100.0, custom_kernel=DIAMOND_KERNEL_5,
     plt.title('torch')
     plt.imshow(depth_map2.squeeze(), 'gray')
     plt.show()
-
-
-
 
 
 
