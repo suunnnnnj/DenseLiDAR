@@ -69,10 +69,11 @@ def validate(model, val_loader, epoch, device):
             
             dense_pseudo_depth = model(raw_image, velodyne_image, device)
             
-            dense_pseudo_depth = dense_pseudo_depth.unsqueeze(1).to(device)  # (B, H, W) -> (B, 1, H, W)
+            dense_pseudo_depth = dense_pseudo_depth.to(device)  # (B, H, W) -> (B, 1, H, W)
             
-            dense_target = torch.tensor(pseudo_gt_map).to(device)  # GPU로 이동
-            
+            # GPU로 이동
+            dense_target = pseudo_gt_map.clone().detach().to(device)
+
             loss = total_loss(dense_target, annotated_image, dense_pseudo_depth)
             val_loss += loss.item()
 
