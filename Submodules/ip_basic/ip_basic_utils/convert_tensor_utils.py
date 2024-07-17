@@ -6,6 +6,7 @@ from typing import List, Optional
 def median_blur_torch(image_tensor, kernel_size):
     pad_size = kernel_size // 2
     padded_image = F.pad(image_tensor, (pad_size, pad_size, pad_size, pad_size), mode='reflect')
+
     
     N, C, H, W = padded_image.shape
     unfolded = F.unfold(padded_image, kernel_size=(kernel_size, kernel_size))
@@ -14,41 +15,72 @@ def median_blur_torch(image_tensor, kernel_size):
     median_values, _ = unfolded.median(dim=2)
     
     median_image = median_values.view(N, C, H - 2 * pad_size, W - 2 * pad_size)
-    
     return median_image
 
+
 def gaussian(kernel_size, sigma):
-    ax = torch.arange(-kernel_size // 2 + 1., kernel_size // 2 + 1.)
-    xx, yy = torch.meshgrid([ax, ax])
-    kernel = torch.exp(-(xx**2 + yy**2) / (2. * sigma**2))
-    return kernel / torch.sum(kernel)
+    """
+    Compute a Gaussian kernel.
+
+    Args:
+        kernel_size (int): The size of the Gaussian kernel.
+        sigma (float): The standard deviation of the Gaussian kernel.
+
+    Returns:
+        torch.Tensor: The Gaussian kernel.
+    """
+    x = torch.arange(-(kernel_size // 2), kernel_size // 2 + 1).float()
+    y = x.unsqueeze(0)
+    kernel = torch.exp(-(x ** 2 + y ** 2) / (2 * sigma ** 2))
+    return kernel / kernel.sum()
+
 
 def bilateral_filter(input, kernel_size, sigma_spatial, sigma_color):
-    # Create spatial Gaussian filter
-    spatial_gaussian = gaussian(kernel_size, sigma_spatial).to(input.device)
+    input = (input - input.mean()) / input.std()
+    """
+    Apply a bilateral filter to the input tensor.
 
+    Args:
+        input (torch.Tensor): The input tensor. Shape: (batch_size, 1, height, width)
+        kernel_size (int): The size of the Gaussian kernel.
+        sigma_spatial (float): The standard deviation of the spatial Gaussian kernel.
+        sigma_color (float): The standard deviation of the color Gaussian kernel.
+
+    Returns:
+        torch.Tensor: The filtered output tensor.
+    """
+    # Create spatial Gaussian filter
+    spatial_gaussian = gaussian(kernel_size, sigma_spatial).unsqueeze(0).unsqueeze(0).to(input.device)
+    #print(spatial_gaussian)
     # Pad the input
     padding = kernel_size // 2
     input_padded = F.pad(input, (padding, padding, padding, padding), mode='reflect')
 
-    # Initialize output
-    output = torch.zeros_like(input)
-
-    # Extract the i-th channel
-    channel = input_padded[:, 0, :, :]
-
     # Compute the color distance
-    color_distance = channel - channel.mean(dim=[2, 3], keepdim=True)
+
+    color_distance = input_padded[:, 0] - input_padded[:, 0].mean(dim=[1], keepdim=True)
+    print(color_distance)
+
     color_gaussian = torch.exp(-(color_distance ** 2) / (2 * sigma_color ** 2))
+    print(torch.exp(torch.tensor(-1.5**2/8)))
+    print(color_gaussian)
 
+    print("input_padded")
+    print(input_padded.shape)
+    print("color_gaussian")
+    print(color_gaussian.unsqueeze(1).shape)
     # Apply the spatial Gaussian filter
-    filtered = F.conv2d(channel * color_gaussian, spatial_gaussian.unsqueeze(0).unsqueeze(0))
+    filtered = F.conv2d(input_padded * color_gaussian.unsqueeze(1), spatial_gaussian, padding=padding, stride=1)
+    normalization = F.conv2d(color_gaussian.unsqueeze(1), spatial_gaussian, padding=padding, stride=1)
 
-    # Normalize the result
-    normalization = F.conv2d(color_gaussian, spatial_gaussian.unsqueeze(0).unsqueeze(0))
-    output[:, 0, :, :] = filtered / normalization
+    print(filtered[:, 0].shape)
+    print(filtered[:, 0])
+    print(normalization[:, 0].shape)
+    print(normalization[:, 0])
 
-    return output
+    return filtered[:, 0] / normalization[:, 0]
+
+
 
 
 def _neight2channels_like_kernel(kernel: torch.Tensor) -> torch.Tensor:
@@ -65,29 +97,7 @@ def dilation(
     border_value: float = 0.0,
     max_val: float = 1e4,
 ) -> torch.Tensor:
-    r"""Return the dilated image applying the same kernel in each channel.
 
-    .. image:: _static/img/dilation.png
-
-    The kernel must have 2 dimensions.
-
-    Args:
-        tensor: Image with shape :math:`(B, C, H, W)`.
-        kernel: Positions of non-infinite elements of a flat structuring element. Non-zero values give
-            the set of neighbors of the center over which the operation is applied. Its shape is :math:`(k_x, k_y)`.
-            For full structural elements use torch.ones_like(structural_element).
-        structuring_element: Structuring element used for the grayscale dilation. It may be a non-flat
-            structuring element.
-        origin: Origin of the structuring element. Default: ``None`` and uses the center of
-            the structuring element as origin (rounding towards zero).
-        border_type: It determines how the image borders are handled, where ``border_value`` is the value
-            when ``border_type`` is equal to ``constant``. Default: ``geodesic`` which ignores the values that are
-            outside the image when applying the operation.
-        border_value: Value to fill past edges of input if ``border_type`` is ``constant``.
-        max_val: The value of the infinite elements in the kernel.
-        engine: convolution is faster and less memory hungry, and unfold is more stable numerically
-
-    """
 
     if not isinstance(tensor, torch.Tensor):
         raise TypeError(f"Input type is not a torch.Tensor. Got {type(tensor)}")
@@ -125,8 +135,6 @@ def dilation(
         output.view(B * C, 1, h_pad, w_pad), reshape_kernel, padding=0, bias=neighborhood.view(-1).flip(0)
     ).max(dim=1)
     output = output.view(B, C, H, W)
-
-    output[output < 45000] = 0
 
     return output.view_as(tensor)
 
