@@ -2,35 +2,40 @@
 Mobiltech-Gachon PJ for the month
 
 ## Basic DenseLiDAR Architecture
-<img width="797" alt="image" src="https://github.com/9-coding/Mobiltech-Gachon/assets/127665166/7b973b56-38af-4e79-b602-c5f0443db6ce">
+<img width="1303" alt="image" src="https://github.com/user-attachments/assets/4401a6aa-e52c-4239-bf95-16cd1e204443">
+
 
 ## Target Architecture
-![Screenshot from 2024-07-12 10-05-10](https://github.com/user-attachments/assets/9297ca4a-0b3a-49bc-ab27-9c6fc3434ab0)
+- For using raw image input and SAM result simultaneously.
+- `dcu(dcu(guided_LiDAR + raw_image) + dcu(raw_LiDAR + guided_image)) `
+<img width="1173" alt="image" src="https://github.com/user-attachments/assets/74fd3a33-5b4e-4949-be80-1177079d8825">
+
+
 
 ## Our Variation Samples
 ### 1. Add SAM from Basic DenseLiDAR
-<img width="710" alt="image" src="https://github.com/9-coding/Mobiltech-Gachon/assets/127665166/a8ea5c67-c4e8-4996-b656-bdecba63f98a">
+<img width="1294" alt="image" src="https://github.com/user-attachments/assets/7363b40e-925b-419e-b7f6-a303e3b229f9">
+
 
 ### 2. SAM + Depth Anything V2
 - Add SAM for image guidance and Depth Anything V2 for self-supervised Learning
-<img width="930" alt="image" src="https://github.com/9-coding/Mobiltech-Gachon/assets/127665166/c0ba2cfb-1f5a-4538-8622-497974cde69b">
+<img width="1139" alt="image" src="https://github.com/user-attachments/assets/e592d467-fe25-495d-8325-01cd20356708">
+
+
+
 
 ### 3. Raw LiDAR + SAM + Depth Anything V2
 - Remove IP_Basic and rectify_depth
 - Add SAM for image guidance and Depth Anything V2 for self-supervised Learning
-<img width="479" alt="image" src="https://github.com/9-coding/Mobiltech-Gachon/assets/127665166/0e6e97fd-4685-47ca-a8d9-6730f360a94e">
+<img width="622" alt="image" src="https://github.com/user-attachments/assets/6a6effb8-652c-4e60-b077-1d0a0ecb3374">
 
-### 4. Variation sample #2 + 3 DCUs
-- For using raw image input and SAM result simultaneously.
-- `dcu(dcu(guided_LiDAR + raw_image) + dcu(raw_LiDAR + guided_image)) `
+### 4. Simple version using Depth Anything V2 without SAM
+<img width="1076" alt="image" src="https://github.com/user-attachments/assets/6368c662-5c2d-43ef-9cbd-e72a10833bc4">
 
-<img width="804" alt="image" src="https://github.com/9-coding/Mobiltech-Gachon/assets/127665166/4f470a07-081c-481b-8ab0-d293ad47e962">
 
-### 5. Simple version using Depth Anything V2 without SAM
 
-<img width="866" alt="image" src="https://github.com/9-coding/Mobiltech-Gachon/assets/127665166/eabf4a70-6acc-4f8b-8be8-c7254bb24988">
 
-### 6. Using DeepLiDAR
+### 5. Using DeepLiDAR
+<img width="1078" alt="image" src="https://github.com/user-attachments/assets/39ae55a2-4c6d-48ff-836a-da804f8cd78d">
 
-<img width="1053" alt="image" src="https://github.com/9-coding/Mobiltech-Gachon/assets/127665166/d756783f-4b0d-4607-98e0-1669b1a8ffb2">
 

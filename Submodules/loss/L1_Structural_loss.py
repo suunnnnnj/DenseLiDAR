@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torchvision.transforms.functional import rgb_to_grayscale
 from math import exp
+from torchvision.transforms.functional import rgb_to_grayscale
 
 def gradient_x(img):
     if img.dim() == 4:

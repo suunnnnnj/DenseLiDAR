@@ -25,11 +25,14 @@ def _neight2channels_like_kernel(kernel: torch.Tensor) -> torch.Tensor:
 def dilation(
     tensor: torch.Tensor,
     kernel: torch.Tensor,
+    device,
     structuring_element: Optional[torch.Tensor] = None,
+
     origin: Optional[List[int]] = None,
     border_type: str = "geodesic",
     border_value: float = 0.0,
     max_val: float = 1e4,
+
 ) -> torch.Tensor:
 
     # origin
@@ -45,12 +48,11 @@ def dilation(
     output: torch.Tensor = F.pad(tensor, pad_e, mode=border_type, value=border_value)
 
     # computation
-    neighborhood = torch.zeros_like(kernel)
+    neighborhood = torch.zeros_like(kernel).to(device)
     neighborhood[kernel == 0] = -max_val
-
     B, C, H, W = tensor.size()
     h_pad, w_pad = output.shape[-2:]
-    reshape_kernel = _neight2channels_like_kernel(kernel)
+    reshape_kernel = _neight2channels_like_kernel(kernel).to(device)
 
     output, _ = F.conv2d(
         output.view(B * C, 1, h_pad, w_pad), reshape_kernel, padding=0, bias=neighborhood.view(-1).flip(0)
@@ -62,6 +64,7 @@ def dilation(
 def erosion(
     tensor: torch.Tensor,
     kernel: torch.Tensor,
+    device,
     structuring_element: Optional[torch.Tensor] = None,
     origin: Optional[List[int]] = None,
     border_type: str = "geodesic",
@@ -84,10 +87,10 @@ def erosion(
 
     # computation
     if structuring_element is None:
-        neighborhood = torch.zeros_like(kernel)
+        neighborhood = torch.zeros_like(kernel).to(device)
         neighborhood[kernel == 0] = -max_val
     else:
-        neighborhood = structuring_element.clone()
+        neighborhood = structuring_element.clone().to(device)
         neighborhood[kernel == 0] = -max_val
 
     if engine == "unfold":

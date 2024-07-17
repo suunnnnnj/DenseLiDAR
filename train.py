@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 import argparse
 from torch import optim
@@ -7,6 +9,7 @@ from tqdm import tqdm
 
 from Submodules.loss.total_loss import total_loss
 from Submodules.custom_ip import interpolate_depth_map
+from Submodules.morphology import morphology_torch
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
@@ -17,8 +20,20 @@ parser.add_argument('--batch_size', type=int, default=1, help='number of batch s
 parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpu to train')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
+parser.add_argument('--morph', default='morphology', metavar='S', help='random seed (default: 1)') #
 args = parser.parse_args()
 batch_size = int(args.batch_size / args.gpu_nums)
+
+def select_morph(opt):
+    if opt == 'morphology':
+        f = morphology_torch
+    elif opt == 'interpolate':
+        f = interpolate_depth_map
+    else:
+        print("Please type correct function")
+    return f
+
+
 
 def train(model, train_loader, optimizer, epoch, device):
     model.train()
@@ -28,13 +43,12 @@ def train(model, train_loader, optimizer, epoch, device):
         velodyne_image = data['velodyne_image'].to(device)
         raw_image = data['raw_image'].to(device)
         targets = annotated_image
-
-        # np.float32로 변환
-        pseudo_gt_map = interpolate_depth_map(targets)
+        morph = select_morph(args.morph)
+        pseudo_gt_map = morph(targets, device)
 
         optimizer.zero_grad()
 
-        dense_pseudo_depth = model(raw_image, velodyne_image, device) 
+        dense_pseudo_depth = model(raw_image, velodyne_image, device)
         dense_pseudo_depth = dense_pseudo_depth.to(device)  # (B, H, W) -> (B, 1, H, W)
         dense_target = pseudo_gt_map.clone().detach().to(device)  # GPU로 이동
 
@@ -44,7 +58,7 @@ def train(model, train_loader, optimizer, epoch, device):
 
         running_loss += loss.item()
 
-    print(f"Epoch {epoch + 1} training loss: {running_loss / len(train_loader):.4f}")
+    print(f"\nEpoch {epoch + 1} training loss: {running_loss / len(train_loader):.4f}")
 
 def validate(model, val_loader, epoch, device):
     model.eval()
@@ -55,22 +69,21 @@ def validate(model, val_loader, epoch, device):
             velodyne_image = data['velodyne_image'].to(device)
             raw_image = data['raw_image'].to(device)
             targets = annotated_image
+            morph = select_morph(args.morph)
             
-            pseudo_gt_map = interpolate_depth_map(targets)
-            pseudo_depth_map = interpolate_depth_map(velodyne_image)
+            pseudo_gt_map = morph(targets, device)
             
             dense_pseudo_depth = model(raw_image, velodyne_image, device)
             
             dense_pseudo_depth = dense_pseudo_depth.to(device)  # (B, H, W) -> (B, 1, H, W)
-            
-            # GPU로 이동
-            dense_target = pseudo_gt_map.clone().detach().to(device)
+
+            dense_target = pseudo_gt_map.clone().detach()
 
             loss = total_loss(dense_target, annotated_image, dense_pseudo_depth)
             val_loss += loss.item()
 
     avg_val_loss = val_loss / len(val_loader)
-    print(f"Epoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
+    print(f"\nEpoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
     return avg_val_loss
 
 def save_model(model, optimizer, epoch, path):
