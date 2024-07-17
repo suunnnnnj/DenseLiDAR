@@ -18,14 +18,14 @@ from model import DenseLiDAR
 from train import select_morph
 
 parser = argparse.ArgumentParser(description='deepCompletion')
-parser.add_argument('--datapath', default='', help='datapath')
+parser.add_argument('--datapath', default='datasets/', help='datapath')
 parser.add_argument('--epochs', type=int, default=40, help='number of epochs to train')
 parser.add_argument('--batch_size', type=int, default=1, help='number of batch size to train')
 parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpus to train')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
-parser.add_argument('--world_size', type=int, default=1, help='number of processes for DDP')
-parser.add_argument('--morph', default='morphology', metavar='S', help='random seed (default: 1)') #
+parser.add_argument('--world_size', type=int, default=4, help='number of processes for DDP')
+parser.add_argument('--morph', default='morphology', metavar='S', help='random seed (default: 1)')
 args = parser.parse_args()
 batch_size = int(args.batch_size / args.gpu_nums)
 
@@ -44,7 +44,7 @@ def train(rank, world_size):
     device = torch.device(f'cuda:{rank}')
 
     # Dataset과 DataLoader 설정
-    root_dir = 'sample/'
+    root_dir = args.datapath
 
     train_transform = transforms.Compose([
         ToTensor()
@@ -52,13 +52,13 @@ def train(rank, world_size):
 
     train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
-    train_loader = DataLoader(train_dataset, batch_size=int(args.batch_size), shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler, drop_last=True)
 
     val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, num_replicas=world_size, rank=rank)
-    val_loader = DataLoader(val_dataset, batch_size=int(args.batch_size), shuffle=False, num_workers=8, pin_memory=True, sampler=val_sampler)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=val_sampler, drop_last=True)
 
-    model = DenseLiDAR(int(args.batch_size / args.gpu_nums)).to(device)
+    model = DenseLiDAR(batch_size).to(device)
     model = DDP(model, device_ids=[rank])
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
