@@ -9,6 +9,15 @@ from Submodules.custom_ip import interpolate_depth_map
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
+parser = argparse.ArgumentParser(description='deepCpmpletion')
+parser.add_argument('--datapath', default='', help='datapath')
+parser.add_argument('--epochs', type=int, default=40, help='number of epochs to train')
+parser.add_argument('--batch_size', type=int, default=1, help='number of batch size to train')
+parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpu to train')
+parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
+parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
+args = parser.parse_args()
+
 def train(model, train_loader, optimizer, epoch, device):
     model.train()
     running_loss = 0.0
@@ -79,16 +88,16 @@ def main():
     ])
 
     train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
-    train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=8)
 
     val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
-    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=8)
 
     # define model, loss function, optimizer
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = DenseLiDAR(bs=2).to(device)
+    model = DenseLiDAR(args.batch_size / args.gpu_nums).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-
+    
     best_val_loss = float('inf')
     best_epoch = 0
     best_model_state = None
