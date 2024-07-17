@@ -5,22 +5,40 @@ import matplotlib.pyplot as plt
 from glob import glob
 from scipy.interpolate import griddata
 import torch.nn.functional as F
+from scipy.spatial import cKDTree
 
 def interpolate_depth_map(sparse_depth):
     batch_size, channel, height, width = sparse_depth.shape
-    dense_depth = torch.zeros_like(sparse_depth)
+    device = sparse_depth.device
+    max_distance=5
+
+    dense_depth = torch.zeros_like(sparse_depth, device=device)
     
-    for i in range(batch_size):
-        sparse_depth_np = sparse_depth[i].cpu().numpy()
+    for b in range(batch_size):
+        sparse_depth_np = sparse_depth[b, 0].cpu().numpy()
         
-        _, x, y = np.where(sparse_depth_np > 0)
-        z = sparse_depth_np[sparse_depth_np > 0]
+        # Extract valid depth values
+        y, x = np.where(sparse_depth_np > 0)
+        z = sparse_depth_np[y, x]
         
-        grid_x, grid_y = np.mgrid[0:height, 0:width]
-        dense_depth_np = griddata((x, y), z, (grid_x, grid_y), method='linear')
-        dense_depth_np[np.isnan(dense_depth_np)] = 0
-        
-        dense_depth[i] = torch.tensor(dense_depth_np, dtype=torch.float32)
+        if len(z) > 0:
+            # Create a KDTree for fast distance computation
+            tree = cKDTree(np.vstack((x, y)).T)
+            
+            grid_x, grid_y = np.meshgrid(np.arange(width), np.arange(height))
+            grid_points = np.vstack((grid_x.ravel(), grid_y.ravel())).T
+            
+            # Find the nearest distance to a valid point for each grid point
+            distances, _ = tree.query(grid_points)
+            distances = distances.reshape((height, width))
+            
+            # Perform interpolation only for points within the max_distance
+            dense_depth_np = griddata((x, y), z, (grid_x, grid_y), method='linear')
+            dense_depth_np[np.isnan(dense_depth_np)] = 0
+            
+            # Only update the valid regions in dense_depth
+            valid_mask = (distances <= max_distance)
+            dense_depth[b, 0][valid_mask] = torch.tensor(dense_depth_np[valid_mask], device=device, dtype=dense_depth.dtype)
     
     return dense_depth
 
