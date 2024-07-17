@@ -72,6 +72,9 @@ def train(rank, world_size):
         model.train()
         train_sampler.set_epoch(epoch)
         running_loss = 0.0
+        running_structural_loss = 0.0
+        running_depth_loss = 0.0
+ 
         for i, data in enumerate(tqdm(train_loader, desc=f"Epoch {epoch + 1} [Training]")):
             annotated_image = data['annotated_image'].to(device)
             velodyne_image = data['velodyne_image'].to(device)
@@ -86,17 +89,28 @@ def train(rank, world_size):
             dense_pseudo_depth = dense_pseudo_depth.to(device)
             dense_target = pseudo_gt_map.clone().detach().to(device)
 
-            loss = total_loss(dense_target, targets, dense_pseudo_depth)
+            loss, structural_loss, depth_loss = total_loss(dense_target, targets, dense_pseudo_depth)
             loss.backward()
             optimizer.step()
 
             running_loss += loss.item()
+            running_structural_loss += structural_loss.item()
+            running_depth_loss += depth_loss.item()
 
-        print(f"\nEpoch {epoch + 1} training loss: {running_loss / len(train_loader):.4f}")
+        avg_loss = running_loss / len(train_loader)
+        avg_structural_loss = running_structural_loss / len(train_loader)
+        avg_depth_loss = running_depth_loss / len(train_loader)
+
+        print(f"\nEpoch {epoch + 1} training loss: {avg_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} training structural loss: {avg_structural_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} training depth loss: {avg_depth_loss:.4f}")
 
         # Validation
         model.eval()
         val_loss = 0.0
+        val_structural_loss = 0.0
+        val_depth_loss = 0.0
+
         with torch.no_grad():
             for i, data in enumerate(tqdm(val_loader, desc=f"Epoch {epoch + 1} [Validation]")):
                 annotated_image = data['annotated_image'].to(device)
@@ -110,11 +124,19 @@ def train(rank, world_size):
                 dense_pseudo_depth = dense_pseudo_depth.to(device)
                 dense_target = pseudo_gt_map.clone().detach().to(device)
 
-                loss = total_loss(dense_target, targets, dense_pseudo_depth)
-                val_loss += loss.item()
-
+                v_loss, s_loss, d_loss = total_loss(dense_target, targets, dense_pseudo_depth)
+                
+                val_loss += v_loss.item()
+                val_structural_loss += s_loss.item()
+                val_depth_loss += d_loss.item()
+                
         avg_val_loss = val_loss / len(val_loader)
+        avg_val_structural_loss = val_structural_loss / len(val_loader)
+        avg_val_depth_loss = val_depth_loss / len(val_loader)
+
         print(f"\nEpoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} validation structural loss: {avg_val_structural_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} validation depth loss: {avg_val_depth_loss:.4f}")
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
