@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
@@ -7,6 +8,9 @@ from torchvision.transforms import transforms
 from torch.nn.parallel import DistributedDataParallel as DDP
 from tqdm import tqdm
 import argparse
+import numpy as np
+from PIL import Image
+from skimage import transform
 from Submodules.loss.total_loss import total_loss
 from Submodules.custom_ip import interpolate_depth_map
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
@@ -23,6 +27,8 @@ parser.add_argument('--world_size', type=int, default=1, help='number of process
 args = parser.parse_args()
 
 def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    os.environ['MASTER_PORT'] = '29500'
     dist.init_process_group(backend='nccl', init_method='env://', world_size=world_size, rank=rank)
     torch.manual_seed(args.seed)
 
@@ -43,13 +49,13 @@ def train(rank, world_size):
 
     train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
+    train_loader = DataLoader(train_dataset, batch_size=int(args.batch_size), shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
 
     val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, num_replicas=world_size, rank=rank)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=val_sampler)
+    val_loader = DataLoader(val_dataset, batch_size=int(args.batch_size), shuffle=False, num_workers=8, pin_memory=True, sampler=val_sampler)
 
-    model = DenseLiDAR(args.batch_size / args.gpu_nums).to(device)
+    model = DenseLiDAR(int(args.batch_size / args.gpu_nums)).to(device)
     model = DDP(model, device_ids=[rank])
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -67,7 +73,7 @@ def train(rank, world_size):
             annotated_image = data['annotated_image'].to(device)
             velodyne_image = data['velodyne_image'].to(device)
             raw_image = data['raw_image'].to(device)
-            targets = annotated_image
+            targets = annotated_image.to(device)
 
             pseudo_gt_map = interpolate_depth_map(targets)
 
@@ -93,14 +99,14 @@ def train(rank, world_size):
                 annotated_image = data['annotated_image'].to(device)
                 velodyne_image = data['velodyne_image'].to(device)
                 raw_image = data['raw_image'].to(device)
-                targets = annotated_image
+                targets = annotated_image.to(device)
 
                 pseudo_gt_map = interpolate_depth_map(targets)
                 dense_pseudo_depth = model(raw_image, velodyne_image)
                 dense_pseudo_depth = dense_pseudo_depth.to(device)
                 dense_target = pseudo_gt_map.clone().detach().to(device)
 
-                loss = total_loss(dense_target, annotated_image, dense_pseudo_depth)
+                loss = total_loss(dense_target, targets, dense_pseudo_depth)
                 val_loss += loss.item()
 
         avg_val_loss = val_loss / len(val_loader)
