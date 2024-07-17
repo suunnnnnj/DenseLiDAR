@@ -21,6 +21,7 @@ parser.add_argument('--seed', type=int, default=1, metavar='S', help='random see
 parser.add_argument('--morph', default='morphology', metavar='S', help='random seed (default: 1)')
 args = parser.parse_args()
 batch_size = int(args.batch_size / args.gpu_nums)
+chkpt_epoch = 10 # 해당 에포크마다 체크포인트 저장.
 
 def select_morph(opt):
     if opt == 'morphology':
@@ -30,6 +31,14 @@ def select_morph(opt):
     else:
         print("Please type correct function")
     return f
+
+def save_model(model, optimizer, epoch, path):
+    torch.save({
+        'epoch': epoch,
+        'model_state_dict': model,
+        'optimizer_state_dict': optimizer
+    }, path)
+    print(f'Checkpoint saved at: {path}\n')
 
 def train(model, train_loader, optimizer, epoch, device):
     model.train()
@@ -105,12 +114,7 @@ def validate(model, val_loader, epoch, device):
 
     return avg_loss
 
-def save_model(model, optimizer, epoch, path):
-    torch.save({
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-    }, path)
+
 
 def main():
     # Paths
@@ -142,19 +146,19 @@ def main():
         train(model, train_loader, optimizer, epoch, device)
         val_loss = validate(model, val_loader, epoch, device)
 
+        # checkpoint
+        if epoch % chkpt_epoch == 0:
+            save_path = f'checkpoint/epoch-{epoch}_loss-{val_loss:.2f}.tar'
+            save_model(model.state_dict(), optimizer.state_dict(), epoch, save_path)
+
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_epoch = epoch + 1
             best_model_state = model.state_dict()
             best_optimizer_state = optimizer.state_dict()
 
-    # 훈련이 모두 끝난 후 최상의 모델을 저장
-    save_path = 'best_model.tar'
-    torch.save({
-        'epoch': best_epoch,
-        'model_state_dict': best_model_state,
-        'optimizer_state_dict': best_optimizer_state,
-    }, save_path)
+    # save best model
+    save_model(best_model_state, best_optimizer_state, best_epoch, 'best_model.tar')
 
     print(f'Best model saved at epoch {best_epoch} with validation loss: {best_val_loss:.4f}')
     print('Training Finished')

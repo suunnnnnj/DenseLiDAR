@@ -8,14 +8,10 @@ from torchvision.transforms import transforms
 from torch.nn.parallel import DistributedDataParallel as DDP
 from tqdm import tqdm
 import argparse
-import numpy as np
-from PIL import Image
-from skimage import transform
 from Submodules.loss.total_loss import total_loss
-from Submodules.custom_ip import interpolate_depth_map
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
-from train import select_morph
+from train import select_morph, save_model
 
 parser = argparse.ArgumentParser(description='deepCompletion')
 parser.add_argument('--datapath', default='datasets/', help='datapath')
@@ -28,6 +24,7 @@ parser.add_argument('--world_size', type=int, default=4, help='number of process
 parser.add_argument('--morph', default='morphology', metavar='S', help='random seed (default: 1)')
 args = parser.parse_args()
 batch_size = int(args.batch_size / args.gpu_nums)
+chkpt_epoch = 10 # 해당 에포크마다 체크포인트 저장.
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
@@ -138,6 +135,11 @@ def train(rank, world_size):
         print(f"\nEpoch {epoch + 1} validation structural loss: {avg_val_structural_loss:.4f}")
         print(f"\nEpoch {epoch + 1} validation depth loss: {avg_val_depth_loss:.4f}")
 
+        # checkpoint
+        if epoch % chkpt_epoch == 0:
+            save_path = f'checkpoint/epoch-{epoch}_loss-{val_loss:.2f}.tar'
+            save_model(model.state_dict(), optimizer.state_dict(), epoch, save_path)
+
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             best_epoch = epoch + 1
@@ -145,12 +147,8 @@ def train(rank, world_size):
             best_optimizer_state = optimizer.state_dict()
 
     if rank == 0:
-        save_path = 'best_model.tar'
-        torch.save({
-            'epoch': best_epoch,
-            'model_state_dict': best_model_state,
-            'optimizer_state_dict': best_optimizer_state,
-        }, save_path)
+        # save best model
+        save_model(best_model_state, best_optimizer_state, best_epoch, 'best_model.tar')
         print(f'Best model saved at epoch {best_epoch} with validation loss: {best_val_loss:.4f}')
         print('Training Finished')
 
