@@ -1,18 +1,22 @@
- """
-    Calculate the L1 structural loss using PyTorch tensors
-
-    Parameters:
-    D_bar (torch.Tensor): Tensor of pseudo GT map
-    D_tilde (torch.Tensor): Tensor of pseudo depth map
-    D_hat (torch.Tensor): Tensor of dense depth residual
-
-    Returns:
-    torch.Tensor: The L1 structural loss
-    
- """
-
 import torch
 import torch.nn.functional as F
+from torch.autograd import Variable
+import numpy as np
+from math import exp
+
+"""
+   Calculate the L1 structural loss using PyTorch tensors
+
+   Parameters:
+   D_bar (torch.Tensor): Tensor of pseudo GT map
+   D_tilde (torch.Tensor): Tensor of pseudo depth map
+   D_hat (torch.Tensor): Tensor of dense depth residual
+
+   Returns:
+   torch.Tensor: The L1 structural loss
+   
+"""
+
 
 # SSIM and its helper functions as provided
 def gaussian(window_size, sigma):
