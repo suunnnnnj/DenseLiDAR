@@ -10,6 +10,7 @@ class DenseLiDAR(Module):
     def __init__(self, bs):
         super().__init__()
         self.bs = bs
+        
         self.processing = morphology_torch
         self.rectification = rectify_depth
         self.DCU = depthCompletionNew_blockN(bs)

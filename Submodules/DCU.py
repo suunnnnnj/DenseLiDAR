@@ -1,11 +1,14 @@
 from __future__ import print_function
+import torch
 import torch.utils.data
 import math
-
 from torch import nn
-
 from Submodules.utils.utils_dcu import convbn, predict_normal, adaptative_cat
 
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 class UpProject(nn.Module):
 
@@ -79,6 +82,8 @@ class UpProject(nn.Module):
         out = self.relu(out)
 
         return out
+
+
 
 class ResBlock(nn.Module):
     def __init__(self, inplanes, planes, stride):
