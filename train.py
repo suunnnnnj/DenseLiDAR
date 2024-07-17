@@ -33,8 +33,6 @@ def select_morph(opt):
         print("Please type correct function")
     return f
 
-
-
 def train(model, train_loader, optimizer, epoch, device):
     model.train()
     running_loss = 0.0

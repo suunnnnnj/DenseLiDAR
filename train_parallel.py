@@ -15,6 +15,7 @@ from Submodules.loss.total_loss import total_loss
 from Submodules.custom_ip import interpolate_depth_map
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
+from train import select_morph
 
 parser = argparse.ArgumentParser(description='deepCompletion')
 parser.add_argument('--datapath', default='', help='datapath')
@@ -24,7 +25,9 @@ parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpus to t
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 parser.add_argument('--world_size', type=int, default=1, help='number of processes for DDP')
+parser.add_argument('--morph', default='morphology', metavar='S', help='random seed (default: 1)') #
 args = parser.parse_args()
+batch_size = int(args.batch_size / args.gpu_nums)
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
@@ -74,12 +77,12 @@ def train(rank, world_size):
             velodyne_image = data['velodyne_image'].to(device)
             raw_image = data['raw_image'].to(device)
             targets = annotated_image.to(device)
-
-            pseudo_gt_map = interpolate_depth_map(targets)
+            morph = select_morph(args.morph)
+            pseudo_gt_map = morph(targets, device)
 
             optimizer.zero_grad()
 
-            dense_pseudo_depth = model(raw_image, velodyne_image)
+            dense_pseudo_depth = model(raw_image, velodyne_image, device)
             dense_pseudo_depth = dense_pseudo_depth.to(device)
             dense_target = pseudo_gt_map.clone().detach().to(device)
 
@@ -89,7 +92,7 @@ def train(rank, world_size):
 
             running_loss += loss.item()
 
-        print(f"Epoch {epoch + 1} training loss: {running_loss / len(train_loader):.4f}")
+        print(f"\nEpoch {epoch + 1} training loss: {running_loss / len(train_loader):.4f}")
 
         # Validation
         model.eval()
@@ -100,9 +103,10 @@ def train(rank, world_size):
                 velodyne_image = data['velodyne_image'].to(device)
                 raw_image = data['raw_image'].to(device)
                 targets = annotated_image.to(device)
+                morph = select_morph(args.morph)
 
-                pseudo_gt_map = interpolate_depth_map(targets)
-                dense_pseudo_depth = model(raw_image, velodyne_image)
+                pseudo_gt_map = morph(targets, device)
+                dense_pseudo_depth = model(raw_image, velodyne_image, device)
                 dense_pseudo_depth = dense_pseudo_depth.to(device)
                 dense_target = pseudo_gt_map.clone().detach().to(device)
 
@@ -110,7 +114,7 @@ def train(rank, world_size):
                 val_loss += loss.item()
 
         avg_val_loss = val_loss / len(val_loader)
-        print(f"Epoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
