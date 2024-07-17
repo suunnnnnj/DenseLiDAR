@@ -1,4 +1,4 @@
-from Submodules.utils.morphology_utils import dilation, erosion, median_blur
+from Submodules.utils.utils_morphology import dilation, erosion, median_blur
 from Submodules.utils.kernels import *
 
 def morphology_torch(projected_depths):

@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 from tqdm import tqdm
 
-from Submodules.DCU.submodels.total_loss import total_loss
+from Submodules.loss.total_loss import total_loss
 from Submodules.custom_ip import interpolate_depth_map
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR

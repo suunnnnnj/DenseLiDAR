@@ -4,7 +4,7 @@ import math
 
 from torch import nn
 
-from Submodules.DCU.submodels.submodule import convbn, predict_normal, adaptative_cat
+from Submodules.utils.utils_dcu import convbn, predict_normal, adaptative_cat
 
 
 class UpProject(nn.Module):

@@ -1,5 +1,5 @@
 # Environment
-# cuda = 11.8, python = 3,8,19
+# cuda = 11.8, python = 3.8.19
 tqdm
 pypng
 opencv-python
@@ -7,6 +7,6 @@ scikit-image
 torch==2.2.1 
 torchvision==0.17.1 
 torchaudio==2.2.1 
-numpyt == 1.24.4
+numpy == 1.24.4
 pillow == 9.4.0
 
