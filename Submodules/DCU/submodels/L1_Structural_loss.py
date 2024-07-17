@@ -54,7 +54,7 @@ def l_ssim(D, D_pred):
 
 def l_structural(D, D_pred):
     lambda_grad = 1.0
-    lambda_ssim = 1.0
+    lambda_ssim = 0.5
     
     grad_loss = l_grad(D, D_pred)
     ssim_loss = l_ssim(D, D_pred)
