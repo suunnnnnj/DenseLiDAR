@@ -8,26 +8,23 @@ from torchvision.transforms import transforms
 from torch.nn.parallel import DistributedDataParallel as DDP
 from tqdm import tqdm
 import argparse
-import numpy as np
-from PIL import Image
-from skimage import transform
 from Submodules.loss.total_loss import total_loss
-from Submodules.custom_ip import interpolate_depth_map
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
-from train import select_morph
+from train import select_morph, save_model
 
 parser = argparse.ArgumentParser(description='deepCompletion')
 parser.add_argument('--datapath', default='datasets/', help='datapath')
 parser.add_argument('--epochs', type=int, default=40, help='number of epochs to train')
-parser.add_argument('--batch_size', type=int, default=1, help='number of batch size to train')
-parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpus to train')
+parser.add_argument('--batch_size', type=int, default=64, help='number of batch size to train')
+parser.add_argument('--gpu_nums', type=int, default=4, help='number of gpus to train')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 parser.add_argument('--world_size', type=int, default=4, help='number of processes for DDP')
 parser.add_argument('--morph', default='morphology', metavar='S', help='random seed (default: 1)')
 args = parser.parse_args()
 batch_size = int(args.batch_size / args.gpu_nums)
+chkpt_epoch = 10 # 해당 에포크마다 체크포인트 저장.
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
@@ -72,6 +69,9 @@ def train(rank, world_size):
         model.train()
         train_sampler.set_epoch(epoch)
         running_loss = 0.0
+        running_structural_loss = 0.0
+        running_depth_loss = 0.0
+ 
         for i, data in enumerate(tqdm(train_loader, desc=f"Epoch {epoch + 1} [Training]")):
             annotated_image = data['annotated_image'].to(device)
             velodyne_image = data['velodyne_image'].to(device)
@@ -86,17 +86,28 @@ def train(rank, world_size):
             dense_pseudo_depth = dense_pseudo_depth.to(device)
             dense_target = pseudo_gt_map.clone().detach().to(device)
 
-            loss = total_loss(dense_target, targets, dense_pseudo_depth)
+            loss, structural_loss, depth_loss = total_loss(dense_target, targets, dense_pseudo_depth)
             loss.backward()
             optimizer.step()
 
             running_loss += loss.item()
+            running_structural_loss += structural_loss.item()
+            running_depth_loss += depth_loss.item()
 
-        print(f"\nEpoch {epoch + 1} training loss: {running_loss / len(train_loader):.4f}")
+        avg_loss = running_loss / len(train_loader)
+        avg_structural_loss = running_structural_loss / len(train_loader)
+        avg_depth_loss = running_depth_loss / len(train_loader)
+
+        print(f"\nEpoch {epoch + 1} training loss: {avg_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} training structural loss: {avg_structural_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} training depth loss: {avg_depth_loss:.4f}")
 
         # Validation
         model.eval()
         val_loss = 0.0
+        val_structural_loss = 0.0
+        val_depth_loss = 0.0
+
         with torch.no_grad():
             for i, data in enumerate(tqdm(val_loader, desc=f"Epoch {epoch + 1} [Validation]")):
                 annotated_image = data['annotated_image'].to(device)
@@ -110,11 +121,24 @@ def train(rank, world_size):
                 dense_pseudo_depth = dense_pseudo_depth.to(device)
                 dense_target = pseudo_gt_map.clone().detach().to(device)
 
-                loss = total_loss(dense_target, targets, dense_pseudo_depth)
-                val_loss += loss.item()
-
+                v_loss, s_loss, d_loss = total_loss(dense_target, targets, dense_pseudo_depth)
+                
+                val_loss += v_loss.item()
+                val_structural_loss += s_loss.item()
+                val_depth_loss += d_loss.item()
+                
         avg_val_loss = val_loss / len(val_loader)
+        avg_val_structural_loss = val_structural_loss / len(val_loader)
+        avg_val_depth_loss = val_depth_loss / len(val_loader)
+
         print(f"\nEpoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} validation structural loss: {avg_val_structural_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} validation depth loss: {avg_val_depth_loss:.4f}")
+
+        # checkpoint
+        if epoch % chkpt_epoch == 0:
+            save_path = f'checkpoint/epoch-{epoch}_loss-{val_loss:.2f}.tar'
+            save_model(model.state_dict(), optimizer.state_dict(), epoch, save_path)
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
@@ -123,12 +147,8 @@ def train(rank, world_size):
             best_optimizer_state = optimizer.state_dict()
 
     if rank == 0:
-        save_path = 'best_model.tar'
-        torch.save({
-            'epoch': best_epoch,
-            'model_state_dict': best_model_state,
-            'optimizer_state_dict': best_optimizer_state,
-        }, save_path)
+        # save best model
+        save_model(best_model_state, best_optimizer_state, best_epoch, 'best_model.tar')
         print(f'Best model saved at epoch {best_epoch} with validation loss: {best_val_loss:.4f}')
         print('Training Finished')
 
@@ -140,3 +160,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
