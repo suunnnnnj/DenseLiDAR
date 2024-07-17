@@ -52,7 +52,7 @@ pip3 install -r requirements.txt
 
 3. Run the script:
 ```bash
-python3 demos/depth_completion.py
+python3 demos/morphology.py
 ```
 This will run the algorithm on the cropped validation set and save the outputs to a new folder in `demos/outputs`. Refer to the readme in the downloaded devkit to evaluate the results.
 
@@ -71,7 +71,7 @@ This will run the algorithm on the cropped validation set and save the outputs t
 
 5. (Optional) To run the algorithm on a specific CPU (e.g. CPU 0):
 ```bash
-taskset --cpu-list 0 python3 demos/depth_completion.py
+taskset --cpu-list 0 python3 demos/morphology.py
 ```
 
 ### Results

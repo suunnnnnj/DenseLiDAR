@@ -19,7 +19,7 @@ from sample_dataloader.dataLoader import dataloader  # Import the dataloader fun
 from Submodules.DCU.submodels.depthCompletionNew_blockN import depthCompletionNew_blockN, maskFt
 from Submodules.data_rectification import rectify_depth
 #from Submodules.ip_basic.depth_completion import ip_basic
-from Submodules.ip_basic.custom_ip import interpolate_depth_map
+from Submodules.custom_ip import interpolate_depth_map
 
 
 
