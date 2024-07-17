@@ -1,24 +1,8 @@
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-import numpy as np
 from math import exp
 
-"""
-   Calculate the L1 structural loss using PyTorch tensors
-
-   Parameters:
-   D_bar (torch.Tensor): Tensor of pseudo GT map
-   D_tilde (torch.Tensor): Tensor of pseudo depth map
-   D_hat (torch.Tensor): Tensor of dense depth residual
-
-   Returns:
-   torch.Tensor: The L1 structural loss
-   
-"""
-
-
-# SSIM and its helper functions as provided
 def gaussian(window_size, sigma):
     gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])
     return gauss/gauss.sum()
@@ -82,7 +66,6 @@ def ssim(img1, img2, window_size=11, size_average=True):
     window = window.type_as(img1)
     return _ssim(img1, img2, window, window_size, channel, size_average)
 
-# Gradient calculation functions
 def gradient_x(img):
     gx = img[:, :, :, :-1] - img[:, :, :, 1:]
     return gx
@@ -91,23 +74,18 @@ def gradient_y(img):
     gy = img[:, :, :-1, :] - img[:, :, 1:, :]
     return gy
 
-# L1_structural_loss function
 def L1_structural_loss(D_bar, D_hat, D_tilde):
     D_combined = D_hat + D_tilde
 
-    # Compute gradients
     grad_D_bar_x = gradient_x(D_bar)
     grad_D_bar_y = gradient_y(D_bar)
     grad_D_combined_x = gradient_x(D_combined)
     grad_D_combined_y = gradient_y(D_combined)
 
-    # Compute L1 loss on gradients
     L1_grad_x = torch.mean(torch.abs(grad_D_bar_x - grad_D_combined_x))
     L1_grad_y = torch.mean(torch.abs(grad_D_bar_y - grad_D_combined_y))
 
-    # Compute SSIM loss
     ssim_loss = 1 - ssim(D_bar, D_combined)
 
-    # Combine losses
     loss = L1_grad_x + L1_grad_y + 0.5 * ssim_loss
     return loss
