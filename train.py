@@ -1,4 +1,5 @@
 import torch
+import argparse
 from torch import optim
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
@@ -17,6 +18,7 @@ parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpu to tr
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 args = parser.parse_args()
+batch_size = int(args.batch_size / args.gpu_nums)
 
 def train(model, train_loader, optimizer, epoch, device):
     model.train()
@@ -88,16 +90,16 @@ def main():
     ])
 
     train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
-    train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=8)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
 
     val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
-    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=8)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8)
 
     # define model, loss function, optimizer
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = DenseLiDAR(args.batch_size / args.gpu_nums).to(device)
+    model = DenseLiDAR(bs=batch_size).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    
+
     best_val_loss = float('inf')
     best_epoch = 0
     best_model_state = None
