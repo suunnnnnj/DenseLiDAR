@@ -33,6 +33,9 @@ def select_morph(opt):
     return f
 
 def save_model(model, optimizer, epoch, path):
+    # Create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    
     torch.save({
         'epoch': epoch,
         'model_state_dict': model,
