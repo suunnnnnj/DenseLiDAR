@@ -1,43 +1,46 @@
+import os
 import argparse
 import torch
-import os
+import torch.distributed as dist
+import torch.multiprocessing as mp
+
 from torch import optim
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+from torch.nn.parallel import DistributedDataParallel as DDP
 from torchvision.transforms import transforms
 from tqdm import tqdm
 
 from Submodules.loss.total_loss import total_loss
-from Submodules.custom_ip import interpolate_depth_map
 from Submodules.morphology import morphology_torch
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
 parser = argparse.ArgumentParser(description='deepCompletion')
-parser.add_argument('--datapath', default='', help='datapath')
+parser.add_argument('--datapath', default='datasets/', help='datapath')
 parser.add_argument('--epochs', type=int, default=40, help='number of epochs to train')
-parser.add_argument('--batch_size', type=int, default=1, help='number of batch size to train')
-parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpu to train')
-parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
+parser.add_argument('--checkpoint', type=int, default=10, help='number of epochs to making checkpoint')
+parser.add_argument('--batch_size', type=int, default=64, help='number of batch size to train')
+parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpus to train')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
-parser.add_argument('--morph', default='morphology', metavar='S', help='random seed (default: 1)')
 args = parser.parse_args()
-batch_size = int(args.batch_size / args.gpu_nums)
-chkpt_epoch = 10 # 해당 에포크마다 체크포인트 저장.
 
-def select_morph(opt):
-    if opt == 'morphology':
-        f = morphology_torch
-    elif opt == 'interpolate':
-        f = interpolate_depth_map
-    else:
-        print("Please type correct function")
-    return f
+
+def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    os.environ['MASTER_PORT'] = '29500'
+    dist.init_process_group(backend='nccl', init_method='env://', world_size=world_size, rank=rank)
+    torch.manual_seed(args.seed)
+
+
+def cleanup():
+    dist.destroy_process_group()
+
 
 def save_model(model, optimizer, epoch, path):
     # Create the directory if it doesn't exist
-    save_path = "checkpoint"
-    os.makedirs(save_path, exist_ok=True)
-    
+    os.makedirs(os.path.dirname('checkpoint/'), exist_ok=True)
+
     torch.save({
         'epoch': epoch,
         'model_state_dict': model,
@@ -45,7 +48,8 @@ def save_model(model, optimizer, epoch, path):
     }, path)
     print(f'Checkpoint saved at: {path}\n')
 
-def train(model, train_loader, optimizer, epoch, device):
+
+def train(model, device, train_loader, optimizer, epoch, writer, rank):
     model.train()
     running_loss = 0.0
     running_structural_loss = 0.0
@@ -55,15 +59,14 @@ def train(model, train_loader, optimizer, epoch, device):
         annotated_image = data['annotated_image'].to(device)
         velodyne_image = data['velodyne_image'].to(device)
         raw_image = data['raw_image'].to(device)
-        targets = annotated_image
-        morph = select_morph(args.morph)
-        pseudo_gt_map = morph(targets, device)
+        targets = annotated_image.to(device)
+        pseudo_gt_map = morphology_torch(targets, device)
 
         optimizer.zero_grad()
 
         dense_pseudo_depth = model(raw_image, velodyne_image, device)
-        dense_pseudo_depth = dense_pseudo_depth.to(device)  # (B, H, W) -> (B, 1, H, W)
-        dense_target = pseudo_gt_map.clone().detach().to(device)  # GPU로 이동
+        dense_pseudo_depth = dense_pseudo_depth.to(device)
+        dense_target = pseudo_gt_map.clone().detach().to(device)
 
         loss, structural_loss, depth_loss = total_loss(dense_target, targets, dense_pseudo_depth)
         loss.backward()
@@ -73,15 +76,26 @@ def train(model, train_loader, optimizer, epoch, device):
         running_structural_loss += structural_loss.item()
         running_depth_loss += depth_loss.item()
 
-    avg_loss = running_loss / len(train_loader)
-    avg_structural_loss = running_structural_loss / len(train_loader)
-    avg_depth_loss = running_depth_loss / len(train_loader)
+    try:
+        avg_loss = running_loss / len(train_loader)
+        avg_structural_loss = running_structural_loss / len(train_loader)
+        avg_depth_loss = running_depth_loss / len(train_loader)
+    except:
+        print("your datapath is something wrong!")
+        exit()
 
-    print(f"\nEpoch {epoch + 1} training loss: {avg_loss:.4f}")
-    print(f"\nEpoch {epoch + 1} training structural loss: {avg_structural_loss:.4f}")
-    print(f"\nEpoch {epoch + 1} training depth loss: {avg_depth_loss:.4f}")
+    if rank == 0:
+        writer.add_scalar('Loss/train', avg_loss, epoch)
+        writer.add_scalar('Loss/train_structural', avg_structural_loss, epoch)
+        writer.add_scalar('Loss/train_depth', avg_depth_loss, epoch)
+        print(f"\nEpoch {epoch + 1} training loss: {avg_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} training structural loss: {avg_structural_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} training depth loss: {avg_depth_loss:.4f}")
 
-def validate(model, val_loader, epoch, device):
+    return avg_loss, avg_structural_loss, avg_depth_loss
+
+
+def validate(model, device, val_loader, scheduler, epoch, writer, rank):
     model.eval()
     val_loss = 0.0
     val_structural_loss = 0.0
@@ -92,81 +106,101 @@ def validate(model, val_loader, epoch, device):
             annotated_image = data['annotated_image'].to(device)
             velodyne_image = data['velodyne_image'].to(device)
             raw_image = data['raw_image'].to(device)
-            targets = annotated_image
-            morph = select_morph(args.morph)
-            
-            pseudo_gt_map = morph(targets, device)
-            
+            targets = annotated_image.to(device)
+
+            pseudo_gt_map = morphology_torch(targets, device)
             dense_pseudo_depth = model(raw_image, velodyne_image, device)
-            
-            dense_pseudo_depth = dense_pseudo_depth.to(device)  # (B, H, W) -> (B, 1, H, W)
+            dense_pseudo_depth = dense_pseudo_depth.to(device)
+            dense_target = pseudo_gt_map.clone().detach().to(device)
 
-            dense_target = pseudo_gt_map.clone().detach()
+            v_loss, s_loss, d_loss = total_loss(dense_target, targets, dense_pseudo_depth)
 
-            loss, structural_loss, depth_loss = total_loss(dense_target, annotated_image, dense_pseudo_depth)
-            
-            val_loss += loss.item()
-            val_structural_loss += structural_loss.item()
-            val_depth_loss += depth_loss.item()
-            
-    avg_loss = val_loss / len(val_loader)
-    avg_structural_loss = val_structural_loss / len(val_loader)
-    avg_depth_loss = val_depth_loss / len(val_loader)
+            val_loss += v_loss.item()
+            val_structural_loss += s_loss.item()
+            val_depth_loss += d_loss.item()
 
-    print(f"\nEpoch {epoch + 1} validation loss: {avg_loss:.4f}")
-    print(f"\nEpoch {epoch + 1} validation structural loss: {avg_structural_loss:.4f}")
-    print(f"\nEpoch {epoch + 1} validation depth loss: {avg_depth_loss:.4f}")
+    avg_val_loss = val_loss / len(val_loader)
+    avg_val_structural_loss = val_structural_loss / len(val_loader)
+    avg_val_depth_loss = val_depth_loss / len(val_loader)
 
-    return avg_loss
+    if rank == 0:
+        writer.add_scalar('Loss/val', avg_val_loss, epoch)
+        writer.add_scalar('Loss/val_structural', avg_val_structural_loss, epoch)
+        writer.add_scalar('Loss/val_depth', avg_val_depth_loss, epoch)
+        print(f"\nEpoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} validation structural loss: {avg_val_structural_loss:.4f}")
+        print(f"\nEpoch {epoch + 1} validation depth loss: {avg_val_depth_loss:.4f}")
+
+    scheduler.step()
+
+    return avg_val_loss, avg_val_structural_loss, avg_val_depth_loss
 
 
+def main(rank, world_size):
+    setup(rank, world_size)
+    torch.cuda.set_device(rank)
+    device = torch.device(f'cuda:{rank}')
 
-def main():
-    # Paths
-    root_dir = 'sample/'
+    batch_size = args.batch_size
 
-    # Dataset과 DataLoader 설정
+    if rank == 0:
+        writer = SummaryWriter()
+
+    root_dir = args.datapath
+
     train_transform = transforms.Compose([
         ToTensor()
     ])
 
     train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
+    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
+                              sampler=train_sampler, drop_last=True)
 
     val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8)
+    val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, num_replicas=world_size, rank=rank)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
+                            sampler=val_sampler, drop_last=True)
 
-    # define model, loss function, optimizer
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = DenseLiDAR(bs=batch_size).to(device)
+    model = DenseLiDAR(batch_size).to(device)
+    model = DDP(model, device_ids=[rank])
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-7, last_epoch=-1,
+                                                           verbose=True)
     best_val_loss = float('inf')
     best_epoch = 0
     best_model_state = None
     best_optimizer_state = None
 
-    num_epochs = 100
+    num_epochs = args.epochs
     for epoch in range(num_epochs):
-        train(model, train_loader, optimizer, epoch, device)
-        val_loss = validate(model, val_loader, epoch, device)
+        train_sampler.set_epoch(epoch)
+        train(model, device, train_loader, optimizer, epoch, writer, rank)
+        avg_val_loss, avg_val_structural_loss, avg_val_depth_loss = validate(model, device, val_loader, scheduler,
+                                                                             epoch, writer, rank)
 
-        # checkpoint
-        if epoch % chkpt_epoch == 0:
-            save_path = f'checkpoint/epoch-{epoch}_loss-{val_loss:.2f}.tar'
+        if epoch % args.checkpoint == 0 and rank == 0:
+            save_path = f'checkpoint/epoch-{epoch}_loss-{avg_val_loss:.2f}.tar'
             save_model(model.state_dict(), optimizer.state_dict(), epoch, save_path)
 
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
             best_epoch = epoch + 1
             best_model_state = model.state_dict()
             best_optimizer_state = optimizer.state_dict()
 
-    # save best model
-    save_model(best_model_state, best_optimizer_state, best_epoch, 'best_model.tar')
+    if rank == 0:
+        save_model(best_model_state, best_optimizer_state, best_epoch, 'best_model.tar')
+        print(f'Best model saved at epoch {best_epoch} with validation loss: {best_val_loss:.4f}')
+        print('Training Finished')
+        writer.close()
 
-    print(f'Best model saved at epoch {best_epoch} with validation loss: {best_val_loss:.4f}')
-    print('Training Finished')
+    cleanup()
 
-if __name__ == '__main__':
-    main()
+
+if __name__ == "__main__":
+    args.world_size = args.gpu_nums
+    batch_size = int(args.batch_size / args.gpu_nums)
+
+    world_size = args.world_size
+    mp.spawn(main, args=(world_size,), nprocs=world_size, join=True)
