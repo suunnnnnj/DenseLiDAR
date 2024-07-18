@@ -16,7 +16,7 @@ from Submodules.morphology import morphology_torch
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
-parser = argparse.ArgumentParser(description='deepCompletion')
+parser = argparse.ArgumentParser(description='depthCompletion')
 parser.add_argument('--datapath', default='datasets/', help='datapath')
 parser.add_argument('--epochs', type=int, default=40, help='number of epochs to train')
 parser.add_argument('--checkpoint', type=int, default=10, help='number of epochs to making checkpoint')
@@ -38,7 +38,6 @@ def cleanup():
 
 
 def save_model(model, optimizer, epoch, path):
-    # Create the directory if it doesn't exist
     os.makedirs(os.path.dirname('checkpoint/'), exist_ok=True)
 
     torch.save({
@@ -51,46 +50,41 @@ def save_model(model, optimizer, epoch, path):
 
 def train(model, device, train_loader, optimizer, epoch, writer, rank):
     model.train()
-    running_loss = 0.0
-    running_structural_loss = 0.0
-    running_depth_loss = 0.0
+    train_loss = 0.0
+    train_structural_loss = 0.0
+    train_depth_loss = 0.0
 
     for i, data in enumerate(tqdm(train_loader, desc=f"Epoch {epoch + 1} [Training]")):
         annotated_image = data['annotated_image'].to(device)
         velodyne_image = data['velodyne_image'].to(device)
         raw_image = data['raw_image'].to(device)
-        targets = annotated_image.to(device)
-        pseudo_gt_map = morphology_torch(targets, device)
+        pseudo_gt_map = morphology_torch(annotated_image, device).clone().detach().to(device)
 
         optimizer.zero_grad()
 
-        dense_pseudo_depth = model(raw_image, velodyne_image, device)
-        dense_pseudo_depth = dense_pseudo_depth.to(device)
-        dense_target = pseudo_gt_map.clone().detach().to(device)
+        dense_depth = model(raw_image, velodyne_image, device).to(device)
 
-        loss, structural_loss, depth_loss = total_loss(dense_target, targets, dense_pseudo_depth)
-        loss.backward()
+        t_loss, s_loss, d_loss = total_loss(pseudo_gt_map, annotated_image, dense_depth)
+        t_loss.backward()
         optimizer.step()
 
-        running_loss += loss.item()
-        running_structural_loss += structural_loss.item()
-        running_depth_loss += depth_loss.item()
+        train_loss += t_loss.item()
+        train_structural_loss += s_loss.item()
+        train_depth_loss += d_loss.item()
 
+    avg_train_loss = train_loss / len(train_loader)
+    avg_structural_loss = train_structural_loss / len(train_loader)
+    avg_depth_loss = train_depth_loss / len(train_loader)
     
-    avg_loss = running_loss / len(train_loader)
-    avg_structural_loss = running_structural_loss / len(train_loader)
-    avg_depth_loss = running_depth_loss / len(train_loader)
-    
-
     if rank == 0:
-        writer.add_scalar('Loss/train', avg_loss, epoch)
+        writer.add_scalar('Loss/train', avg_train_loss, epoch)
         writer.add_scalar('Loss/train_structural', avg_structural_loss, epoch)
         writer.add_scalar('Loss/train_depth', avg_depth_loss, epoch)
-        print(f"\nEpoch {epoch + 1} training loss: {avg_loss:.4f}")
-        print(f"\nEpoch {epoch + 1} training structural loss: {avg_structural_loss:.4f}")
-        print(f"\nEpoch {epoch + 1} training depth loss: {avg_depth_loss:.4f}")
+    
+        print(f"depth loss: {avg_depth_loss:.4f}, structural loss: {avg_structural_loss:.4f}")
+        print(f"training loss: {avg_train_loss:.4f}\n")
 
-    return avg_loss, avg_structural_loss, avg_depth_loss
+    return avg_train_loss, avg_structural_loss, avg_depth_loss
 
 
 def validate(model, device, val_loader, scheduler, epoch, writer, rank):
@@ -104,34 +98,31 @@ def validate(model, device, val_loader, scheduler, epoch, writer, rank):
             annotated_image = data['annotated_image'].to(device)
             velodyne_image = data['velodyne_image'].to(device)
             raw_image = data['raw_image'].to(device)
-            targets = annotated_image.to(device)
+            pseudo_gt_map = morphology_torch(annotated_image, device).clone().detach().to(device)
 
-            pseudo_gt_map = morphology_torch(targets, device)
-            dense_pseudo_depth = model(raw_image, velodyne_image, device)
-            dense_pseudo_depth = dense_pseudo_depth.to(device)
-            dense_target = pseudo_gt_map.clone().detach().to(device)
+            dense_depth = model(raw_image, velodyne_image, device).to(device)
 
-            v_loss, s_loss, d_loss = total_loss(dense_target, targets, dense_pseudo_depth)
+            v_loss, s_loss, d_loss = total_loss(pseudo_gt_map, annotated_image, dense_depth)
 
             val_loss += v_loss.item()
             val_structural_loss += s_loss.item()
             val_depth_loss += d_loss.item()
 
     avg_val_loss = val_loss / len(val_loader)
-    avg_val_structural_loss = val_structural_loss / len(val_loader)
-    avg_val_depth_loss = val_depth_loss / len(val_loader)
+    avg_structural_loss = val_structural_loss / len(val_loader)
+    avg_depth_loss = val_depth_loss / len(val_loader)
 
     if rank == 0:
         writer.add_scalar('Loss/val', avg_val_loss, epoch)
-        writer.add_scalar('Loss/val_structural', avg_val_structural_loss, epoch)
-        writer.add_scalar('Loss/val_depth', avg_val_depth_loss, epoch)
-        print(f"\nEpoch {epoch + 1} validation loss: {avg_val_loss:.4f}")
-        print(f"\nEpoch {epoch + 1} validation structural loss: {avg_val_structural_loss:.4f}")
-        print(f"\nEpoch {epoch + 1} validation depth loss: {avg_val_depth_loss:.4f}")
+        writer.add_scalar('Loss/val_structural', avg_structural_loss, epoch)
+        writer.add_scalar('Loss/val_depth', avg_depth_loss, epoch)
+
+        print(f"depth loss: {avg_depth_loss:.4f}, structural loss: {avg_structural_loss:.4f}")
+        print(f"validation loss: {avg_val_loss:.4f}\n")
 
     scheduler.step()
 
-    return avg_val_loss, avg_val_structural_loss, avg_val_depth_loss
+    return avg_val_loss, avg_structural_loss, avg_depth_loss
 
 
 def main(rank, world_size):
@@ -140,6 +131,7 @@ def main(rank, world_size):
     device = torch.device(f'cuda:{rank}')
 
     batch_size = args.batch_size
+
     writer = None
     if rank == 0:
         writer = SummaryWriter()
@@ -150,7 +142,7 @@ def main(rank, world_size):
         ToTensor()
     ])
 
-     # Load train dataset
+    # Load train dataset
     try:
         train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
     except Exception as e:
