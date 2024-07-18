@@ -16,11 +16,13 @@ from Submodules.morphology import morphology_torch
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
+import matplotlib.pyplot as plt
+
 parser = argparse.ArgumentParser(description='deepCompletion')
 parser.add_argument('--datapath', default='datasets/', help='datapath')
 parser.add_argument('--epochs', type=int, default=40, help='number of epochs to train')
 parser.add_argument('--checkpoint', type=int, default=10, help='number of epochs to making checkpoint')
-parser.add_argument('--batch_size', type=int, default=64, help='number of batch size to train')
+parser.add_argument('--batch_size', type=int, default=1, help='number of batch size to train')
 parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpus to train')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 args = parser.parse_args()
@@ -60,6 +62,8 @@ def train(model, device, train_loader, optimizer, epoch, writer, rank):
         velodyne_image = data['velodyne_image'].to(device)
         raw_image = data['raw_image'].to(device)
         targets = annotated_image.to(device)
+           # 제거해야 하는 코드
+        dense_pseudo_depth = model(raw_image, velodyne_image, device)
         pseudo_gt_map = morphology_torch(targets, device)
 
         optimizer.zero_grad()

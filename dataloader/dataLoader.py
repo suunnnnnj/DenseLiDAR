@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from skimage import transform
 import torchvision.transforms as transforms
+import torch.nn.functional as F
 
 class KITTIDepthDataset(Dataset):
     def __init__(self, root_dir, mode='train', transform=None, target_size=(256, 512)):
@@ -70,9 +71,9 @@ class KITTIDepthDataset(Dataset):
             raw_image = Image.open(raw_img_path).convert('RGB')
 
             # Resize images using skimage
-            annotated_image = transform.resize(np.array(annotated_image), self.target_size, anti_aliasing=True)
-            velodyne_image = transform.resize(np.array(velodyne_image), self.target_size, anti_aliasing=True)
-            raw_image = transform.resize(np.array(raw_image), self.target_size, anti_aliasing=True)
+            annotated_image = F.interpolate(annotated_image, size=(256, 512), mode='bilinear', align_corners=False)
+            velodyne_image = F.interpolate(velodyne_image, size=(256, 512), mode='bilinear', align_corners=False)
+            raw_image = F.interpolate(raw_image, size=(256, 512), mode='bilinear', align_corners=False)
 
             # Convert back to PIL Image
             annotated_image = Image.fromarray((annotated_image * 255).astype(np.uint8))
@@ -98,8 +99,8 @@ class KITTIDepthDataset(Dataset):
             test_velodyne_image = Image.open(test_velodyne_path).convert('L')
 
             # Resize images using skimage
-            test_image = transform.resize(np.array(test_image), self.target_size, anti_aliasing=True)
-            test_velodyne_image = transform.resize(np.array(test_velodyne_image), self.target_size, anti_aliasing=True)
+            test_image = F.interpolate(test_image, size=(256, 512), mode='bilinear', align_corners=False)
+            test_velodyne_image = F.interpolate(test_velodyne_image, size=(256, 512), mode='bilinear', align_corners=False)
 
             # Convert back to PIL Image
             test_image = Image.fromarray((test_image * 255).astype(np.uint8))

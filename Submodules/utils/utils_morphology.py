@@ -26,7 +26,6 @@ def dilation(
     tensor: torch.Tensor,
     kernel: torch.Tensor,
     device,
-    structuring_element: Optional[torch.Tensor] = None,
 
     origin: Optional[List[int]] = None,
     border_type: str = "geodesic",
@@ -45,14 +44,14 @@ def dilation(
     if border_type == "geodesic":
         border_value = -max_val
         border_type = "constant"
-    output: torch.Tensor = F.pad(tensor, pad_e, mode=border_type, value=border_value)
+    output: torch.Tensor = F.pad(tensor, pad_e, mode=border_type, value=border_value).to(device)
 
     # computation
     neighborhood = torch.zeros_like(kernel).to(device)
     neighborhood[kernel == 0] = -max_val
     B, C, H, W = tensor.size()
     h_pad, w_pad = output.shape[-2:]
-    reshape_kernel = _neight2channels_like_kernel(kernel).to(device)
+    reshape_kernel = _neight2channels_like_kernel(kernel).to(device).float()
 
     output, _ = F.conv2d(
         output.view(B * C, 1, h_pad, w_pad), reshape_kernel, padding=0, bias=neighborhood.view(-1).flip(0)
