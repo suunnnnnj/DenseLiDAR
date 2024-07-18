@@ -9,4 +9,4 @@ torchvision==0.17.1
 torchaudio==2.2.1 
 numpy == 1.24.4
 pillow == 9.4.0
-
+tensorboard
