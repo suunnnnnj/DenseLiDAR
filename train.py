@@ -76,13 +76,11 @@ def train(model, device, train_loader, optimizer, epoch, writer, rank):
         running_structural_loss += structural_loss.item()
         running_depth_loss += depth_loss.item()
 
-    try:
-        avg_loss = running_loss / len(train_loader)
-        avg_structural_loss = running_structural_loss / len(train_loader)
-        avg_depth_loss = running_depth_loss / len(train_loader)
-    except:
-        print("your datapath is something wrong!")
-        exit()
+    
+    avg_loss = running_loss / len(train_loader)
+    avg_structural_loss = running_structural_loss / len(train_loader)
+    avg_depth_loss = running_depth_loss / len(train_loader)
+    
 
     if rank == 0:
         writer.add_scalar('Loss/train', avg_loss, epoch)
@@ -142,7 +140,7 @@ def main(rank, world_size):
     device = torch.device(f'cuda:{rank}')
 
     batch_size = args.batch_size
-
+    writer = None
     if rank == 0:
         writer = SummaryWriter()
 
@@ -152,12 +150,24 @@ def main(rank, world_size):
         ToTensor()
     ])
 
-    train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
+     # Load train dataset
+    try:
+        train_dataset = KITTIDepthDataset(root_dir=root_dir, mode='train', transform=train_transform)
+    except Exception as e:
+        print(f"Error loading train dataset: {e}")
+        return
+
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
                               sampler=train_sampler, drop_last=True)
 
-    val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
+    # Load val dataset
+    try:
+        val_dataset = KITTIDepthDataset(root_dir=root_dir, mode='val', transform=train_transform)
+    except Exception as e:
+        print(f"Error loading validation dataset: {e}")
+        return
+        
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, num_replicas=world_size, rank=rank)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
                             sampler=val_sampler, drop_last=True)
