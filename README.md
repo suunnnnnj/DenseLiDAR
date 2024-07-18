@@ -8,10 +8,11 @@ Mobiltech-Gachon PJ for the month
 - For using raw image input and SAM result simultaneously.
 - `dcu(dcu(guided_LiDAR + raw_image) + dcu(raw_LiDAR + guided_image)) `
 
+## Requirements
+- Ubuntu 20.04 LTS
+- Python 3.8
+- CUDA 10.2, 11.08
 
-
-
-## Usage
 ### Installation
 ```
 git clone https://github.com/suunnnnnj/SSDC.git
@@ -19,7 +20,40 @@ cd SSDC
 pip install -r requirements.txt
 ```
 
-### Running
+### Dataset
+**kitti_raw dataset download**
+```
+cd datasets/kitti_depth
+wget https://github.com/youmi-zym/CompletionFormer/files/12575038/kitti_archives_to_download.txt
+wget -i kitti_archives_to_download.txt -P kitti_raw/
+cd kitti_raw
+unzip "*.zip"
+```
+
+```
+kitti_depth
+├──data_depth_annotated
+|     ├── train
+|     └── val
+├── data_depth_velodyne
+|     ├── train
+|     └── val
+├── data_depth_selection
+|     ├── test_depth_completion_anonymous
+|     |── test_depth_prediction_anonymous
+|     └── val_selection_cropped
+└── kitti_raw
+      ├── 2011_09_26
+      ├── 2011_09_28
+      ├── 2011_09_29
+      ├── 2011_09_30
+      └── 2011_10_03
+```
+
+
+## Usage
+
+### Training
 ```
 python train.py --datapath [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [CHECKPOINT] --batch_size [BATCH_SIZE] --gpu_nums [YOUR_GPU_NUMS] --seed [RANDOM_SEED]
 ```
@@ -35,6 +69,9 @@ example
 ```
 python train.py --datapath kitti_dataset/ --epochs 50 --checkpoint 10 --batch_size 64 --gpu_nums 4 --seed 23
 ```
+
+### Running
+- Placeholder
 
 <details>
   <summary><h3>Our Variation Samples</h3></summary>
