@@ -63,7 +63,7 @@ def train(rank, world_size):
     model = DenseLiDAR(batch_size).to(device)
     model = DDP(model, device_ids=[rank])
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-7, last_epoch=-1, verbose=True)
     best_val_loss = float('inf')
     best_epoch = 0
     best_model_state = None
@@ -150,7 +150,7 @@ def train(rank, world_size):
             print(f"\nEpoch {epoch + 1} validation structural loss: {avg_val_structural_loss:.4f}")
             print(f"\nEpoch {epoch + 1} validation depth loss: {avg_val_depth_loss:.4f}")
 
-        
+        scheduler.step()
 
         # check point
         if epoch % chkpt_epoch == 0 and rank == 0:
@@ -162,7 +162,7 @@ def train(rank, world_size):
             best_epoch = epoch + 1
             best_model_state = model.state_dict()
             best_optimizer_state = optimizer.state_dict()
-
+    
     if rank == 0:
         # save model
         save_model(best_model_state, best_optimizer_state, best_epoch, 'best_model.tar')
