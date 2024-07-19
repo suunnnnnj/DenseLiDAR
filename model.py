@@ -17,7 +17,6 @@ class DenseLiDAR(Module):
         self.DCU = depthCompletionNew_blockN(bs)
 
     def forward(self, image, sparse, device):
-        visualize_1('model_sparse', sparse)
         # sparse = torch.tensor(sparse).to(device).squeeze()
         pseudo_depth_map = self.processing(sparse, device)
         rectified_depth = self.rectification(sparse, pseudo_depth_map)

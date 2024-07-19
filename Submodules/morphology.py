@@ -43,6 +43,4 @@ def morphology_torch(projected_depths, device):
     resize_transform = transforms.Resize((256, 512), antialias=True, interpolation=BICUBIC)
     depth_map = resize_transform(depth_map)
 
-    visualize_1('morph result - resized', depth_map)
-
     return depth_map
