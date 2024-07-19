@@ -3,6 +3,7 @@ import argparse
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
+import torch.nn.functional as F
 
 from torch import optim
 from torch.utils.data import DataLoader
@@ -58,6 +59,22 @@ def train(model, device, train_loader, optimizer, epoch, writer, rank):
         annotated_image = data['annotated_image'].to(device)
         velodyne_image = data['velodyne_image'].to(device)
         raw_image = data['raw_image'].to(device)
+        annotated_image = data['annotated_image'].to(device)
+        velodyne_image = data['velodyne_image'].to(device)
+        raw_image = data['raw_image'].to(device)
+        
+        annotated_image = annotated_image.float()
+        # H와 W 차원을 정규화
+        B, C, H, W = annotated_image.size()
+        annotated_image = annotated_image.view(B, C, -1)
+        annotated_image = F.normalize(annotated_image, p=2, dim=2)
+        annotated_image = annotated_image.view(B, C, H, W)
+        velodyne_image = velodyne_image.float()
+        # H와 W 차원을 정규화
+        B, C, H, W = velodyne_image.size()
+        velodyne_image = velodyne_image.view(B, C, -1)
+        velodyne_image = F.normalize(velodyne_image, p=2, dim=2)
+        velodyne_image = velodyne_image.view(B, C, H, W)
         pseudo_gt_map = morphology_torch(annotated_image, device).clone().detach().to(device)
 
         optimizer.zero_grad()
@@ -98,6 +115,22 @@ def validate(model, device, val_loader, scheduler, epoch, writer, rank):
             annotated_image = data['annotated_image'].to(device)
             velodyne_image = data['velodyne_image'].to(device)
             raw_image = data['raw_image'].to(device)
+            
+            annotated_image = data['annotated_image'].to(device)
+            velodyne_image = data['velodyne_image'].to(device)
+            raw_image = data['raw_image'].to(device)          
+            annotated_image = annotated_image.float()
+            # H와 W 차원을 정규화
+            B, C, H, W = annotated_image.size()
+            annotated_image = annotated_image.view(B, C, -1)
+            annotated_image = F.normalize(annotated_image, p=2, dim=2)
+            annotated_image = annotated_image.view(B, C, H, W)
+            velodyne_image = velodyne_image.float()
+             # H와 W 차원을 정규화
+            B, C, H, W = velodyne_image.size()
+            velodyne_image = velodyne_image.view(B, C, -1)
+            velodyne_image = F.normalize(velodyne_image, p=2, dim=2)
+            velodyne_image = velodyne_image.view(B, C, H, W)
             pseudo_gt_map = morphology_torch(annotated_image, device).clone().detach().to(device)
 
             dense_depth = model(raw_image, velodyne_image, device).to(device)

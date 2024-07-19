@@ -1,10 +1,9 @@
 from Submodules.utils.utils_morphology import dilation, erosion, median_blur
 from Submodules.utils.kernels import *
 
-def morphology_torch(projected_depths, device):
-    depth_map = projected_depths / 256.0
-    max_depth = 100
-
+def morphology_torch(depth_map, device):
+    max_depth = 1
+    
     # Invert
     valid_pixels = (depth_map > 0.1)
     depth_map[valid_pixels] = max_depth - depth_map[valid_pixels]
