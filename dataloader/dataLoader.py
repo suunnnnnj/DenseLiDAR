@@ -67,7 +67,7 @@ class KITTIDepthDataset(Dataset):
         if self.mode in ['train', 'val']:
             annotated_img_path = self.annotated_paths[idx]
             velodyne_img_path = self.velodyne_paths[idx]
-            raw_img_path = self.raw_paths[idx]
+            raw_img_path = self.raw_paths[idx].conver('RGB')
 
             annotated_image = Image.open(annotated_img_path)
             velodyne_image = Image.open(velodyne_img_path)
