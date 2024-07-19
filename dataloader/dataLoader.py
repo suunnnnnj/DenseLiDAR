@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 from PIL import Image
+from torchvision.transforms import InterpolationMode, transforms
 
 class KITTIDepthDataset(Dataset):
     def __init__(self, root_dir, mode='train', transform=None):
@@ -64,7 +65,10 @@ class KITTIDepthDataset(Dataset):
             annotated_image = Image.open(annotated_img_path)
             velodyne_image = Image.open(velodyne_img_path)
             raw_image = Image.open(raw_img_path).convert('RGB')
-
+            BICUBIC = InterpolationMode.BICUBIC
+            resize_transform = transforms.Resize((256, 512), antialias=True, interpolation=BICUBIC)
+            raw_image = resize_transform(raw_image)
+    	
             sample = {
                 'annotated_image': annotated_image,
                 'velodyne_image': velodyne_image,

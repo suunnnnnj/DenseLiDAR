@@ -1,4 +1,3 @@
-from torchvision.transforms import InterpolationMode, transforms
 from Submodules.utils.utils_morphology import dilation, erosion, median_blur
 from Submodules.utils.kernels import *
 
@@ -30,9 +29,5 @@ def morphology_torch(projected_depths, device):
     # Invert
     valid_pixels = (depth_map > 0.1)
     depth_map[valid_pixels] = max_depth - depth_map[valid_pixels]
-
-    BICUBIC = InterpolationMode.BICUBIC
-    resize_transform = transforms.Resize((256, 512), antialias=True, interpolation=BICUBIC)
-    depth_map = resize_transform(depth_map)
 
     return depth_map

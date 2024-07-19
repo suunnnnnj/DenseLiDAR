@@ -153,7 +153,7 @@ class depthCompletionNew_blockN(nn.Module):
     def _make_upproj_layer(self,block,in_channels,out_channels,bs):
         return block(in_channels,out_channels,bs)
 
-    def forward(self, left,sparse2, mask):
+    def forward(self, left, sparse2, mask):
         inputM = mask
         inputS = torch.cat((sparse2, inputM), 1)
         inputS_conv = self.convS(inputS)
@@ -163,12 +163,14 @@ class depthCompletionNew_blockN(nn.Module):
         inputS_conv2 = self.convS2(inputS_conv1)
         inputS_conv3 = self.convS3(inputS_conv2)
         inputS_conv4 = self.convS4(inputS_conv3)
+        print(inputS_conv4.shape)
 
         input2 = left
         out_conv2 = self.conv2(self.conv1(input2))
         out_conv3 = self.conv3_1(self.conv3(out_conv2))
         out_conv4 = self.conv4_1(self.conv4(out_conv3))
         out_conv5 = self.conv5_1(self.conv5(out_conv4))
+        print(out_conv5.shape)
         out_conv6 = self.conv6_1(self.conv6(out_conv5))+inputS_conv4
 
         out6 = self.predict_normal6(out_conv6)
@@ -195,7 +197,7 @@ class depthCompletionNew_blockN(nn.Module):
         out2 = self.predict_normal2(concat2)
         normal2 = out2
 
-        return normal2,concat2
+        return normal2, concat2
 
 class maskFt(nn.Module):
     def __init__(self):
