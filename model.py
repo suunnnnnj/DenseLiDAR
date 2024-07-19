@@ -4,6 +4,7 @@ from Submodules.DCU import depthCompletionNew_blockN
 from Submodules.data_rectification import rectify_depth
 from Submodules.custom_ip import interpolate_depth_map
 from Submodules.morphology import morphology_torch
+from Submodules.utils.visualization import visualize_1
 
 
 class DenseLiDAR(Module):
@@ -16,6 +17,7 @@ class DenseLiDAR(Module):
         self.DCU = depthCompletionNew_blockN(bs)
 
     def forward(self, image, sparse, device):
+        visualize_1('model_sparse', sparse)
         # sparse = torch.tensor(sparse).to(device).squeeze()
         pseudo_depth_map = self.processing(sparse, device)
         rectified_depth = self.rectification(sparse, pseudo_depth_map)

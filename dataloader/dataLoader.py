@@ -69,16 +69,28 @@ class KITTIDepthDataset(Dataset):
             velodyne_img_path = self.velodyne_paths[idx]
             raw_img_path = self.raw_paths[idx]
 
-            annotated_image = Image.open(annotated_img_path).convert('RGB')
-            velodyne_image = Image.open(velodyne_img_path).convert('L')
-            raw_image = Image.open(raw_img_path).convert('RGB')
+            annotated_image = Image.open(annotated_img_path)
+            velodyne_image = Image.open(velodyne_img_path)
+            raw_image = Image.open(raw_img_path)
+
+            # 이미지를 NumPy 배열로 변환
+            annotated_array = np.array(annotated_image)
+            velodyne_array = np.array(velodyne_image)
+            raw_array = np.array(raw_image)
+
+            # 픽셀 값 정규화
+            annotated_normalized = (annotated_array - annotated_array.min()) / (
+                        annotated_array.max() - annotated_array.min())
+            velodyne_normalized = (velodyne_array - velodyne_array.min()) / (
+                        velodyne_array.max() - velodyne_array.min())
+            raw_normalized = (raw_array - raw_array.min()) / (raw_array.max() - raw_array.min())
 
             # Resize images using torchvision transforms
-            """BICUBIC = InterpolationMode.BICUBIC
+            BICUBIC = InterpolationMode.BICUBIC
             resize_transform = transforms.Resize(self.target_size, antialias=True, interpolation=BICUBIC)
             annotated_image = resize_transform(annotated_image)
             velodyne_image = resize_transform(velodyne_image)
-            raw_image = resize_transform(raw_image)"""
+            raw_image = resize_transform(raw_image)
 
             sample = {
                 'annotated_image': annotated_image,

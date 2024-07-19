@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from Submodules.loss.total_loss import total_loss
 from Submodules.morphology import morphology_torch
+from Submodules.utils.visualization import visualize_1
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
@@ -20,7 +21,7 @@ parser = argparse.ArgumentParser(description='depthCompletion')
 parser.add_argument('--datapath', default='datasets/', help='datapath')
 parser.add_argument('--epochs', type=int, default=40, help='number of epochs to train')
 parser.add_argument('--checkpoint', type=int, default=10, help='number of epochs to making checkpoint')
-parser.add_argument('--batch_size', type=int, default=64, help='number of batch size to train')
+parser.add_argument('--batch_size', type=int, default=1, help='number of batch size to train')
 parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpus to train')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 args = parser.parse_args()
@@ -126,6 +127,8 @@ def validate(model, device, val_loader, scheduler, epoch, writer, rank):
 
 
 def main(rank, world_size):
+
+    torch.cuda.empty_cache()
     setup(rank, world_size)
     torch.cuda.set_device(rank)
     device = torch.device(f'cuda:{rank}')
@@ -152,6 +155,7 @@ def main(rank, world_size):
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
                               sampler=train_sampler, drop_last=True)
+
 
     # Load val dataset
     try:
