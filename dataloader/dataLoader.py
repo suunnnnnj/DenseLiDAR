@@ -67,7 +67,10 @@ class KITTIDepthDataset(Dataset):
             raw_image = Image.open(raw_img_path).convert('RGB')
             BICUBIC = InterpolationMode.BICUBIC
             resize_transform = transforms.Resize((256, 512), antialias=True, interpolation=BICUBIC)
+            resize_transform1 = transforms.Resize((370, 1220), antialias=True, interpolation=BICUBIC)
             raw_image = resize_transform(raw_image)
+            velodyne_image = resize_transform1(velodyne_image)
+            annotated_image = resize_transform1(annotated_image)
     	
             sample = {
                 'annotated_image': annotated_image,
