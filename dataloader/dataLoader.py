@@ -1,28 +1,20 @@
 import os
 import torch
-import numpy as np
-from torch.utils.data import Dataset, DataLoader
-from PIL import Image
-from skimage import transform
+from torch.utils.data import Dataset
 import torchvision.transforms as transforms
-from torchvision.transforms import InterpolationMode
-
-from Submodules.utils.visualization import visualize_1
-
+from PIL import Image
 
 class KITTIDepthDataset(Dataset):
-    def __init__(self, root_dir, mode='train', transform=None, target_size=(256, 512)):
+    def __init__(self, root_dir, mode='train', transform=None):
         """
         Args:
             root_dir (string): Directory with all the dataset folders.
             mode (string): 'train', 'val', or 'test' to specify the dataset split.
             transform (callable, optional): Optional transform to be applied on a sample.
-            target_size (tuple): Desired output size of the images (height, width).
         """
         self.root_dir = root_dir
         self.mode = mode
         self.transform = transform
-        self.target_size = target_size
 
         if mode in ['train', 'val']:
             self.annotated_paths = self._get_file_paths(os.path.join(root_dir, 'data_depth_annotated', mode))
@@ -73,25 +65,6 @@ class KITTIDepthDataset(Dataset):
             velodyne_image = Image.open(velodyne_img_path)
             raw_image = Image.open(raw_img_path).convert('RGB')
 
-            # 이미지를 NumPy 배열로 변환
-            annotated_array = np.array(annotated_image)
-            velodyne_array = np.array(velodyne_image)
-            raw_array = np.array(raw_image)
-
-            # 픽셀 값 정규화
-            annotated_normalized = (annotated_array - annotated_array.min()) / (
-                        annotated_array.max() - annotated_array.min())
-            velodyne_normalized = (velodyne_array - velodyne_array.min()) / (
-                        velodyne_array.max() - velodyne_array.min())
-            raw_normalized = (raw_array - raw_array.min()) / (raw_array.max() - raw_array.min())
-
-            # Resize images using torchvision transforms
-            BICUBIC = InterpolationMode.BICUBIC
-            resize_transform = transforms.Resize(self.target_size, antialias=True, interpolation=BICUBIC)
-            annotated_image = resize_transform(annotated_image)
-            velodyne_image = resize_transform(velodyne_image)
-            raw_image = resize_transform(raw_image)
-
             sample = {
                 'annotated_image': annotated_image,
                 'velodyne_image': velodyne_image,
@@ -107,12 +80,7 @@ class KITTIDepthDataset(Dataset):
             test_velodyne_path = self.test_velodyne_paths[idx]
 
             test_image = Image.open(test_image_path).convert('RGB')
-            test_velodyne_image = Image.open(test_velodyne_path).convert('L')
-
-            # Resize images using torchvision transforms
-            resize_transform = transforms.Resize(self.target_size, antialias=True)
-            test_image = resize_transform(test_image)
-            test_velodyne_image = resize_transform(test_velodyne_image)
+            test_velodyne_image = Image.open(test_velodyne_path)
 
             sample = {
                 'test_image': test_image,
@@ -124,7 +92,6 @@ class KITTIDepthDataset(Dataset):
 
             return sample
 
-# Transformations (if any)
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 

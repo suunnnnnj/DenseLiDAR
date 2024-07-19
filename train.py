@@ -13,7 +13,6 @@ from tqdm import tqdm
 
 from Submodules.loss.total_loss import total_loss
 from Submodules.morphology import morphology_torch
-from Submodules.utils.visualization import visualize_1
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
@@ -127,7 +126,6 @@ def validate(model, device, val_loader, scheduler, epoch, writer, rank):
 
 
 def main(rank, world_size):
-
     torch.cuda.empty_cache()
     setup(rank, world_size)
     torch.cuda.set_device(rank)

@@ -1,14 +1,10 @@
 from __future__ import print_function
 import torch
 import torch.utils.data
-import math
-from torch import nn
-from Submodules.utils.utils_dcu import convbn, predict_normal, adaptative_cat
-
-
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
+from Submodules.utils.utils_dcu import convbn, predict_normal, adaptative_cat
 
 class UpProject(nn.Module):
 
@@ -38,19 +34,19 @@ class UpProject(nn.Module):
     def forward(self, x):
         out1_1 = self.conv1_1(nn.functional.pad(x, (1, 1, 1, 1)))
 
-        out1_2 = self.conv1_2(nn.functional.pad(x, (1, 1, 1, 0)))#author's interleaving pading in github
+        out1_2 = self.conv1_2(nn.functional.pad(x, (1, 1, 1, 0)))
 
-        out1_3 = self.conv1_3(nn.functional.pad(x, (1, 0, 1, 1)))#author's interleaving pading in github
+        out1_3 = self.conv1_3(nn.functional.pad(x, (1, 0, 1, 1)))
 
-        out1_4 = self.conv1_4(nn.functional.pad(x, (1, 0, 1, 0)))#author's interleaving pading in github
+        out1_4 = self.conv1_4(nn.functional.pad(x, (1, 0, 1, 0)))
 
         out2_1 = self.conv2_1(nn.functional.pad(x, (1, 1, 1, 1)))
 
-        out2_2 = self.conv2_2(nn.functional.pad(x, (1, 1, 1, 0)))#author's interleaving pading in github
+        out2_2 = self.conv2_2(nn.functional.pad(x, (1, 1, 1, 0)))
 
-        out2_3 = self.conv2_3(nn.functional.pad(x, (1, 0, 1, 1)))#author's interleaving pading in github
+        out2_3 = self.conv2_3(nn.functional.pad(x, (1, 0, 1, 1)))
 
-        out2_4 = self.conv2_4(nn.functional.pad(x, (1, 0, 1, 0)))#author's interleaving pading in github
+        out2_4 = self.conv2_4(nn.functional.pad(x, (1, 0, 1, 0)))
 
         height = out1_1.size()[2]
         width = out1_1.size()[3]
@@ -83,8 +79,6 @@ class UpProject(nn.Module):
 
         return out
 
-
-
 class ResBlock(nn.Module):
     def __init__(self, inplanes, planes, stride):
         super(ResBlock, self).__init__()
@@ -104,6 +98,7 @@ class ResBlock(nn.Module):
         x = self.ds(x)
         out += x
         out = self.relu(out)
+
         return out
 
 class depthCompletionNew_blockN(nn.Module):
@@ -232,4 +227,5 @@ class maskFt(nn.Module):
 
     def forward(self,tempCat):
         out = self.ftcnn(tempCat)
+        
         return out
