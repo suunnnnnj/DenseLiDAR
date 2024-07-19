@@ -5,6 +5,10 @@ from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from skimage import transform
 import torchvision.transforms as transforms
+from torchvision.transforms import InterpolationMode
+
+from Submodules.utils.visualization import visualize_1
+
 
 class KITTIDepthDataset(Dataset):
     def __init__(self, root_dir, mode='train', transform=None, target_size=(256, 512)):
@@ -69,22 +73,18 @@ class KITTIDepthDataset(Dataset):
             velodyne_image = Image.open(velodyne_img_path).convert('L')
             raw_image = Image.open(raw_img_path).convert('RGB')
 
-            # Resize images using skimage
-            annotated_image = transform.resize(np.array(annotated_image), self.target_size, anti_aliasing=True)
-            velodyne_image = transform.resize(np.array(velodyne_image), self.target_size, anti_aliasing=True)
-            raw_image = transform.resize(np.array(raw_image), self.target_size, anti_aliasing=True)
-
-            # Convert back to PIL Image
-            annotated_image = Image.fromarray((annotated_image * 255).astype(np.uint8))
-            velodyne_image = Image.fromarray((velodyne_image * 255).astype(np.uint8))
-            raw_image = Image.fromarray((raw_image * 255).astype(np.uint8))
+            # Resize images using torchvision transforms
+            """BICUBIC = InterpolationMode.BICUBIC
+            resize_transform = transforms.Resize(self.target_size, antialias=True, interpolation=BICUBIC)
+            annotated_image = resize_transform(annotated_image)
+            velodyne_image = resize_transform(velodyne_image)
+            raw_image = resize_transform(raw_image)"""
 
             sample = {
                 'annotated_image': annotated_image,
                 'velodyne_image': velodyne_image,
                 'raw_image': raw_image
             }
-
             if self.transform:
                 sample = self.transform(sample)
 
@@ -97,13 +97,10 @@ class KITTIDepthDataset(Dataset):
             test_image = Image.open(test_image_path).convert('RGB')
             test_velodyne_image = Image.open(test_velodyne_path).convert('L')
 
-            # Resize images using skimage
-            test_image = transform.resize(np.array(test_image), self.target_size, anti_aliasing=True)
-            test_velodyne_image = transform.resize(np.array(test_velodyne_image), self.target_size, anti_aliasing=True)
-
-            # Convert back to PIL Image
-            test_image = Image.fromarray((test_image * 255).astype(np.uint8))
-            test_velodyne_image = Image.fromarray((test_velodyne_image * 255).astype(np.uint8))
+            # Resize images using torchvision transforms
+            resize_transform = transforms.Resize(self.target_size, antialias=True)
+            test_image = resize_transform(test_image)
+            test_velodyne_image = resize_transform(test_velodyne_image)
 
             sample = {
                 'test_image': test_image,
