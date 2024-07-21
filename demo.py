@@ -60,18 +60,23 @@ def save_depth_as_png(depth_array, output_path):
 # Paths
 image_path = "demo_image.png"
 sparse_depth_path = "demo_velodyne.png"
-model_path = "/home/mobiltech/Desktop/Test/SSDC/checkpoint/epoch-30_loss-7.34.tar"  # pretrained model path
+model_path = "best_model.tar"  # pretrained model path
 output_path = "dense_depth_output2.png"
 
 try:
     # Load the image and sparse depth map
     image = Image.open(image_path).convert("RGB")
-    sparse_depth_image = Image.open(sparse_depth_path).convert("L")  # Load as grayscale
+    sparse_depth_image = Image.open(sparse_depth_path)  # Load as grayscale
 
     # Preprocess the inputs
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    image_tensor = transforms.ToTensor()(image).unsqueeze(0).to(device)
-    sparse_depth_tensor = transforms.ToTensor()(sparse_depth_image).unsqueeze(0).to(device)
+    transform = transforms.Compose([
+        transforms.ToTensor(),  # Converts the image to a float tensor
+        transforms.Lambda(lambda x: x.float())  # Ensures the tensor is of type float
+    ])
+    
+    image_tensor = transform(image).unsqueeze(0).to(device)
+    sparse_depth_tensor = transform(sparse_depth_image).unsqueeze(0).to(device)
 
     # Initialize and run the model
     model = DenseLiDAR(bs=image_tensor.size(0), model_path=model_path)
@@ -87,3 +92,4 @@ try:
 
 except Exception as e:
     print(f"An error occurred: {e}")
+
