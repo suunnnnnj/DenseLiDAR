@@ -12,6 +12,7 @@ from tqdm import tqdm
 from Submodules.loss.total_loss import total_loss
 from dataloader.sub_dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
+import numpy as np
 
 parser = argparse.ArgumentParser(description='depthCompletion')
 parser.add_argument('--datapath', default='datasets/', help='datapath')
@@ -57,7 +58,7 @@ def train(model, device, train_loader, optimizer, epoch, writer, rank):
         pseudo_depth_map = data['pseudo_depth_map'].to(device)
         pseudo_gt_map = data['pseudo_gt_map'].to(device)
         raw_image = data['raw_image'].to(device)
-    
+
         optimizer.zero_grad()
 
         dense_depth = model(raw_image, velodyne_image, pseudo_depth_map, device).to(device)
