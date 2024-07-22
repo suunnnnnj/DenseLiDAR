@@ -185,8 +185,7 @@ def main(rank, world_size):
     model = DenseLiDAR(batch_size).to(device)
     model = DDP(model, device_ids=[rank])
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-7, last_epoch=-1,
-                                                           verbose=True)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-7, last_epoch=-1)
     best_val_loss = float('inf')
     best_epoch = 0
     best_model_state = None
