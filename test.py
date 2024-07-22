@@ -4,7 +4,7 @@ import numpy as np
 import sys
 
 # 이미지 파일 경로
-image_path = 'demo_velodyne.png'  # 원하는 이미지 파일 경로로 변경하세요
+image_path = 'demo_image.png'  # 원하는 이미지 파일 경로로 변경하세요
 
 # OpenCV로 이미지 읽기 (그레이스케일)
 opencv_image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
