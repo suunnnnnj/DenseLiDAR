@@ -115,7 +115,7 @@ def validate(model, device, val_loader, scheduler, epoch, writer, rank):
 
             dense_depth = model(raw_image, velodyne_image, pseudo_depth_map, device).to(device)
 
-            v_loss, s_loss, d_loss = total_loss(rader_image, annotated_image, dense_depth)
+            v_loss, s_loss, d_loss = total_loss(pseudo_gt_map, annotated_image, dense_depth)
 
             val_loss += v_loss.item()
             val_structural_loss += s_loss.item()

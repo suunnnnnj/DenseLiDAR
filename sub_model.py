@@ -2,7 +2,6 @@ from torch.nn import Module
 from Submodules.DCU import depthCompletionNew_blockN
 from Submodules.data_rectification import rectify_depth
 from Submodules.custom_ip import interpolate_depth_map
-from Submodules.pseudo_depth_map import morphology_torch
 from torchvision.transforms import InterpolationMode, transforms
 
 class DenseLiDAR(Module):
