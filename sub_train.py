@@ -14,8 +14,8 @@ from tqdm import tqdm
 from Submodules.utils.utils_train import normalize_hw
 from Submodules.loss.total_loss import total_loss
 from Submodules.morphology import morphology_torch
-from dataloader.dataLoader import KITTIDepthDataset, ToTensor
-from model import DenseLiDAR
+from dataloader.sub_dataLoader import KITTIDepthDataset, ToTensor
+from sub_model import DenseLiDAR
 
 parser = argparse.ArgumentParser(description='depthCompletion')
 parser.add_argument('--datapath', default='datasets/', help='datapath')
