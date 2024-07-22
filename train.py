@@ -62,9 +62,6 @@ def train(model, device, train_loader, optimizer, epoch, writer, rank):
         annotated_image = data['annotated_image'].to(device)
         velodyne_image = data['velodyne_image'].to(device)
         raw_image = data['raw_image'].to(device)
-        
-        annotated_image = normalize_hw(annotated_image)
-        velodyne_image = normalize_hw(velodyne_image)
 
         pseudo_gt_map = morphology_torch(annotated_image, device).clone().detach().to(device)
 
