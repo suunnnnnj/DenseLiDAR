@@ -22,8 +22,8 @@ class KITTIDepthDataset(Dataset):
         if mode in ['train', 'val']:
             self.annotated_paths = self._get_file_paths(os.path.join(root_dir, 'data_depth_annotated', mode))
             self.velodyne_paths = self._get_file_paths(os.path.join(root_dir, 'data_depth_velodyne', mode))
-            self.pseudo_depth_path = self._get_file_paths(os.path.join(root_dir, 'pseudo_depth_path', mode))
-            self.pseudo_gt_path = self._get_file_paths(os.path.join(root_dir, 'pseudo_gt_path', mode))
+            self.pseudo_depth_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_depth_map', mode))
+            self.pseudo_gt_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_gt_map', mode))
             self.raw_paths = self._get_raw_file_paths(os.path.join(root_dir, 'kitti_raw'), self.annotated_paths)
         elif mode == 'test':
             self.test_image_paths = self._get_file_paths(
@@ -55,7 +55,7 @@ class KITTIDepthDataset(Dataset):
 
     def __len__(self):
         if self.mode in ['train', 'val']:
-            return min(len(self.annotated_paths), len(self.velodyne_paths), len(self.pseudo_depth_path), len(self.pseudo_gt_path), len(self.raw_paths))
+            return min(len(self.annotated_paths), len(self.velodyne_paths), len(self.pseudo_depth_map), len(self.pseudo_gt_map), len(self.raw_paths))
         elif self.mode == 'test':
             return min(len(self.test_image_paths), len(self.test_velodyne_paths), len(self.test_depth_path), len(self.test_radar_paths))
     
@@ -66,28 +66,28 @@ class KITTIDepthDataset(Dataset):
         if self.mode in ['train', 'val']:
             annotated_img_path = self.annotated_paths[idx]
             velodyne_img_path = self.velodyne_paths[idx]
-            pseudo_depth_path = self.pseudo_depth_path[idx]
-            pseudo_gt_path = self.pseudo_gt_path[idx]
+            pseudo_depth_map = self.pseudo_depth_map[idx]
+            pseudo_gt_map = self.pseudo_gt_map[idx]
             raw_img_path = self.raw_paths[idx]
 
-            annotated_image = Image.open(annotated_img_path)
-            velodyne_image = Image.open(velodyne_img_path)
-            pseudo_depth = Image.open(pseudo_depth_path)
-            pseudo_gt = Image.open(pseudo_gt_path)
+            annotated_image = Image.open(annotated_img_path).convert('L')
+            velodyne_image = Image.open(velodyne_img_path).convert('L')
+            pseudo_depth_map = Image.open(pseudo_depth_map).convert('L')
+            pseudo_gt_map = Image.open(pseudo_gt_map).convert('L')
             raw_image = Image.open(raw_img_path).convert('RGB')
 
             # Resize images
             annotated_image = self.resize_transform(annotated_image)
             velodyne_image = self.resize_transform(velodyne_image)
-            pseudo_depth = self.resize_transform(pseudo_depth)
-            pseudo_gt = self.resize_transform(pseudo_gt)
+            pseudo_depth_map = self.resize_transform(pseudo_depth_map)
+            pseudo_gt_map = self.resize_transform(pseudo_gt_map)
             raw_image = self.resize_transform(raw_image)
     	
             sample = {
                 'annotated_image': annotated_image,
                 'velodyne_image': velodyne_image,
-                'pseudo_depth': pseudo_depth,
-                'pseudo_gt': pseudo_gt,
+                'pseudo_depth_map': pseudo_depth_map,
+                'pseudo_gt_map': pseudo_gt_map,
                 'raw_image': raw_image
             }
             if self.transform:
@@ -127,14 +127,14 @@ class ToTensor(object):
         if 'annotated_image' in sample:
             annotated_image = sample['annotated_image']
             velodyne_image = sample['velodyne_image']
-            pseudo_depth = sample['pseudo_depth']
-            pseudo_gt = sample['pseudo_gt']
+            pseudo_depth_map = sample['pseudo_depth_map']
+            pseudo_gt_map = sample['pseudo_gt_map']
             raw_image = sample['raw_image']
             return {
                 'annotated_image': transforms.ToTensor()(annotated_image),
                 'velodyne_image': transforms.ToTensor()(velodyne_image),
-                'pseudo_depth': transforms.ToTensor()(pseudo_depth),
-                'pseudo_gt': transforms.ToTensor()(pseudo_gt),
+                'pseudo_depth_map': transforms.ToTensor()(pseudo_depth_map),
+                'pseudo_gt_map': transforms.ToTensor()(pseudo_gt_map),
                 'raw_image': transforms.ToTensor()(raw_image)
             }
         else:
