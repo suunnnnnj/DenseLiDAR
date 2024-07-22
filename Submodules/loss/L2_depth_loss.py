@@ -1,5 +1,4 @@
 import torch
-from torchvision.transforms import InterpolationMode, transforms
 
 def L2_depth_loss(lidar_data, dense_depth):
     if not isinstance(lidar_data, torch.Tensor):

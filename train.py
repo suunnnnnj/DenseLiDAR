@@ -3,18 +3,14 @@ import argparse
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
-import torch.nn.functional as F
-
 from torch import optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torchvision.transforms import transforms
 from tqdm import tqdm
-from Submodules.utils.utils_train import normalize_hw
 from Submodules.loss.total_loss import total_loss
-from Submodules.morphology import morphology_torch
-from dataloader.dataLoader import KITTIDepthDataset, ToTensor
+from dataloader.sub_dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 
 parser = argparse.ArgumentParser(description='depthCompletion')
@@ -58,16 +54,13 @@ def train(model, device, train_loader, optimizer, epoch, writer, rank):
     for i, data in enumerate(tqdm(train_loader, desc=f"Epoch {epoch + 1} [Training]")):
         annotated_image = data['annotated_image'].to(device)
         velodyne_image = data['velodyne_image'].to(device)
+        pseudo_depth_map = data['pseudo_depth_map'].to(device)
+        pseudo_gt_map = data['pseudo_gt_map'].to(device)
         raw_image = data['raw_image'].to(device)
-        annotated_image = data['annotated_image'].to(device)
-        velodyne_image = data['velodyne_image'].to(device)
-        raw_image = data['raw_image'].to(device)
-
-        pseudo_gt_map = morphology_torch(annotated_image, device).clone().detach().to(device)
-
+    
         optimizer.zero_grad()
 
-        dense_depth = model(raw_image, velodyne_image, device).to(device)
+        dense_depth = model(raw_image, velodyne_image, pseudo_depth_map, device).to(device)
 
         t_loss, s_loss, d_loss = total_loss(pseudo_gt_map, annotated_image, dense_depth)
         t_loss.backward()
@@ -102,18 +95,11 @@ def validate(model, device, val_loader, scheduler, epoch, writer, rank):
         for i, data in enumerate(tqdm(val_loader, desc=f"Epoch {epoch + 1} [Validation]")):
             annotated_image = data['annotated_image'].to(device)
             velodyne_image = data['velodyne_image'].to(device)
+            pseudo_depth_map = data['pseudo_depth_map'].to(device)
+            pseudo_gt_map = data['pseudo_gt_map'].to(device)
             raw_image = data['raw_image'].to(device)
-            
-            annotated_image = data['annotated_image'].to(device)
-            velodyne_image = data['velodyne_image'].to(device)
-            raw_image = data['raw_image'].to(device)          
-            
-            annotated_image = normalize_hw(annotated_image)
-            velodyne_image = normalize_hw(velodyne_image)
 
-            pseudo_gt_map = morphology_torch(annotated_image, device).clone().detach().to(device)
-
-            dense_depth = model(raw_image, velodyne_image, device).to(device)
+            dense_depth = model(raw_image, velodyne_image, pseudo_depth_map, device).to(device)
 
             v_loss, s_loss, d_loss = total_loss(pseudo_gt_map, annotated_image, dense_depth)
 
@@ -166,7 +152,6 @@ def main(rank, world_size):
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
                               sampler=train_sampler, drop_last=True)
-
 
     # Load val dataset
     try:

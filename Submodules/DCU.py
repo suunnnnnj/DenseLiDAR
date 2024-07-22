@@ -2,11 +2,9 @@ from __future__ import print_function
 import torch
 import torch.utils.data
 import torch.nn as nn
-import torch.nn.functional as F
 import math
 from Submodules.utils.utils_dcu import *
 
-import matplotlib.pyplot as plt
 class UpProject(nn.Module):
 
     def __init__(self, in_channels, out_channels, batch_size):
@@ -103,16 +101,6 @@ class ResBlock(nn.Module):
         return out
 
 class depthCompletionNew_blockN(nn.Module):
-    def visualize_residual(self, residual):
-        # Assuming residual is a torch tensor and has the shape (batch_size, channels, height, width)
-        residual_np = residual.cpu().detach().numpy()
-        
-        # Plot the first image in the batch
-        plt.imshow(residual_np.squeeze(), cmap='gray')  # Assuming single-channel depth map
-        plt.colorbar()
-        plt.title('normal2 second channel')
-        plt.show()
-
     def __init__(self, bs):
         super(depthCompletionNew_blockN, self).__init__()
         self.bs = bs
@@ -205,40 +193,6 @@ class depthCompletionNew_blockN(nn.Module):
         concat2 = adaptative_cat(out_conv2, out_deconv2, normal3_up)+inputS_conv0
         out2 = self.predict_normal2(concat2)
         normal2 = out2
-        normal1 = normal2[:,1,:,:]
-        # self.visualize_residual(normal2[:,1,:,:])
+        normal2 = normal2[:,1,:,:]
 
-        return normal1, concat2
-
-class maskFt(nn.Module):
-    def __init__(self):
-        super(maskFt, self).__init__()
-        channels = 1
-        num_of_layers = 3
-        kernel_size = 3
-        padding = 1
-        features = 97
-        layers = []
-
-        for _ in range(num_of_layers-1):
-            layers.append(nn.Conv2d(in_channels=features, out_channels=features, kernel_size=kernel_size, padding=padding, bias=True))
-            layers.append(nn.BatchNorm2d(features))
-            layers.append(nn.ReLU(inplace=True))
-        layers.append(nn.Conv2d(in_channels=features, out_channels=channels, kernel_size=3, padding=1, bias=True))
-
-        self.ftcnn = nn.Sequential(*layers)
-
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-
-    def forward(self,tempCat):
-        out = self.ftcnn(tempCat)
-        
-        return out
+        return normal2, concat2
