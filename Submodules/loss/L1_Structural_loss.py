@@ -102,10 +102,6 @@ def l_ssim(pseudo_gt, dense_depth):
 def l_structural(pseudo_gt, dense_depth):
     lambda_grad = 1.0
     lambda_ssim = 0.5
-    
-    BICUBIC = InterpolationMode.BICUBIC
-    resize_transform = transforms.Resize((256, 512), antialias=True, interpolation=BICUBIC)
-    pseudo_gt = resize_transform(pseudo_gt)
 
     grad_loss = l_grad(pseudo_gt, dense_depth)
     ssim_loss = l_ssim(pseudo_gt, dense_depth)

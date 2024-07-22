@@ -4,8 +4,9 @@ import torch.utils.data
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from Submodules.utils.utils_dcu import convbn, predict_normal, adaptative_cat
+from Submodules.utils.utils_dcu import *
 
+import matplotlib.pyplot as plt
 class UpProject(nn.Module):
 
     def __init__(self, in_channels, out_channels, batch_size):
@@ -102,6 +103,16 @@ class ResBlock(nn.Module):
         return out
 
 class depthCompletionNew_blockN(nn.Module):
+    def visualize_residual(self, residual):
+        # Assuming residual is a torch tensor and has the shape (batch_size, channels, height, width)
+        residual_np = residual.cpu().detach().numpy()
+        
+        # Plot the first image in the batch
+        plt.imshow(residual_np.squeeze(), cmap='gray')  # Assuming single-channel depth map
+        plt.colorbar()
+        plt.title('normal2 second channel')
+        plt.show()
+
     def __init__(self, bs):
         super(depthCompletionNew_blockN, self).__init__()
         self.bs = bs
@@ -133,7 +144,7 @@ class depthCompletionNew_blockN(nn.Module):
         self.predict_normal5 = predict_normal(513)
         self.predict_normal4 = predict_normal(385)
         self.predict_normal3 = predict_normal(193)
-        self.predict_normal2 = predict_normal(97)
+        self.predict_normal2 = predict_normalE2(97)
 
         self.upsampled_normal6_to_5 = nn.ConvTranspose2d(1, 1, 4, 2, 1, bias=False)
         self.upsampled_normal5_to_4 = nn.ConvTranspose2d(1, 1, 4, 2, 1, bias=False)
@@ -194,8 +205,10 @@ class depthCompletionNew_blockN(nn.Module):
         concat2 = adaptative_cat(out_conv2, out_deconv2, normal3_up)+inputS_conv0
         out2 = self.predict_normal2(concat2)
         normal2 = out2
+        normal1 = normal2[:,1,:,:]
+        # self.visualize_residual(normal2[:,1,:,:])
 
-        return normal2, concat2
+        return normal1, concat2
 
 class maskFt(nn.Module):
     def __init__(self):

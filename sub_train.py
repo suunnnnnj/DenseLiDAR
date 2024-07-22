@@ -61,12 +61,7 @@ def train(model, device, train_loader, optimizer, epoch, writer, rank):
         pseudo_depth_map = data['pseudo_depth_map'].to(device)
         pseudo_gt_map = data['pseudo_gt_map'].to(device)
         raw_image = data['raw_image'].to(device)
-        
-        annotated_image = normalize_hw(annotated_image)
-        velodyne_image = normalize_hw(velodyne_image)
-        pseudo_depth_map = normalize_hw(pseudo_depth_map) #morphology
-        pseudo_gt_map = normalize_hw(pseudo_gt_map) #pseudo_gt_map
-
+    
         optimizer.zero_grad()
 
         dense_depth = model(raw_image, velodyne_image, pseudo_depth_map, device).to(device)
@@ -107,11 +102,6 @@ def validate(model, device, val_loader, scheduler, epoch, writer, rank):
             pseudo_depth_map = data['pseudo_depth_map'].to(device) #morphology
             pseudo_gt_map = data['pseudo_gt_map'].to(device) #pseudo_gt_map
             raw_image = data['raw_image'].to(device)
-            
-            annotated_image = normalize_hw(annotated_image)
-            velodyne_image = normalize_hw(velodyne_image)
-            pseudo_depth_map = normalize_hw(pseudo_depth_map)
-            pseudo_gt_map = normalize_hw(pseudo_gt_map)
 
             dense_depth = model(raw_image, velodyne_image, pseudo_depth_map, device).to(device)
 

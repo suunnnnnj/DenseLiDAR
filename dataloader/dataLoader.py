@@ -2,8 +2,8 @@ import os
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
-from PIL import Image
-from torchvision.transforms import InterpolationMode, transforms
+import cv2
+from torchvision.transforms import InterpolationMode
 
 class KITTIDepthDataset(Dataset):
     def __init__(self, root_dir, mode='train', transform=None):
@@ -62,16 +62,15 @@ class KITTIDepthDataset(Dataset):
             velodyne_img_path = self.velodyne_paths[idx]
             raw_img_path = self.raw_paths[idx]
 
-            annotated_image = Image.open(annotated_img_path)
-            velodyne_image = Image.open(velodyne_img_path)
-            raw_image = Image.open(raw_img_path).convert('RGB')
-            BICUBIC = InterpolationMode.BICUBIC
-            resize_transform = transforms.Resize((256, 512), antialias=True, interpolation=BICUBIC)
-            resize_transform1 = transforms.Resize((370, 1220), antialias=True, interpolation=BICUBIC)
-            raw_image = resize_transform(raw_image)
-            velodyne_image = resize_transform1(velodyne_image)
-            annotated_image = resize_transform1(annotated_image)
-    	
+            annotated_image = cv2.imread(annotated_img_path, cv2.IMREAD_GRAYSCALE)
+            velodyne_image = cv2.imread(velodyne_img_path, cv2.IMREAD_GRAYSCALE)
+            raw_image = cv2.imread(raw_img_path, cv2.IMREAD_COLOR)
+            raw_image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB)
+
+            raw_image = cv2.resize(raw_image, (512, 256), interpolation=cv2.INTER_CUBIC)
+            velodyne_image = cv2.resize(velodyne_image, (1220, 370), interpolation=cv2.INTER_CUBIC)
+            annotated_image = cv2.resize(annotated_image, (1220, 370), interpolation=cv2.INTER_CUBIC)
+        
             sample = {
                 'annotated_image': annotated_image,
                 'velodyne_image': velodyne_image,
@@ -86,8 +85,9 @@ class KITTIDepthDataset(Dataset):
             test_image_path = self.test_image_paths[idx]
             test_velodyne_path = self.test_velodyne_paths[idx]
 
-            test_image = Image.open(test_image_path).convert('RGB')
-            test_velodyne_image = Image.open(test_velodyne_path)
+            test_image = cv2.imread(test_image_path, cv2.IMREAD_COLOR)
+            test_image = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
+            test_velodyne_image = cv2.imread(test_velodyne_path, cv2.IMREAD_GRAYSCALE)
 
             sample = {
                 'test_image': test_image,
