@@ -4,12 +4,12 @@ import numpy as np
 import sys
 
 # 이미지 파일 경로
-image_path = 'demo_image.png'  # 원하는 이미지 파일 경로로 변경하세요
+image_path = 'demo_velodyne.png'  # 원하는 이미지 파일 경로로 변경하세요
 
 # OpenCV로 이미지 읽기 (그레이스케일)
-opencv_image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+opencv_image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
 opencv_pixels = np.array(opencv_image)  # numpy 배열로 변환
-
+#opencv_pixels = opencv_pixels / 256.0
 # PIL로 이미지 읽기 (그레이스케일)
 pil_image = Image.open(image_path).convert('L')  # 그레이스케일로 변환
 pil_pixels = np.array(pil_image)  # numpy 배열로 변환
@@ -36,14 +36,10 @@ np.set_printoptions(threshold=sys.maxsize)
 print("OpenCV에서 읽은 이미지의 픽셀 값 (그레이스케일):")
 print(np.unique(np.array(opencv_pixels)))
 
-print("\nPIL에서 읽은 이미지의 픽셀 값 (그레이스케일):")
-print(np.unique(np.array(pil_pixels)))
+#print("\nOpenCV에서 읽은 이미지의 정규화된 픽셀 값 (그레이스케일):")
+#print(np.unique(np.array(opencv_normalized)))
 
-print("\nOpenCV에서 읽은 이미지의 정규화된 픽셀 값 (그레이스케일):")
-print(np.unique(np.array(opencv_normalized)))
 
-print("\nPIL에서 읽은 이미지의 정규화된 픽셀 값 (그레이스케일):")
-print(np.unique(np.array(pil_normalized)))
 
 # 두 픽셀 값 비교
 if np.array_equal(opencv_normalized, pil_normalized):

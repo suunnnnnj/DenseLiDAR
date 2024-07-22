@@ -70,10 +70,10 @@ class KITTIDepthDataset(Dataset):
             pseudo_gt_map_path = self.pseudo_gt_map[idx]
             raw_img_path = self.raw_paths[idx]
 
-            annotated_image = cv2.imread(annotated_img_path, cv2.IMREAD_GRAYSCALE)
-            velodyne_image = cv2.imread(velodyne_img_path, cv2.IMREAD_GRAYSCALE)
-            pseudo_depth_map = cv2.imread(pseudo_depth_map_path, cv2.IMREAD_GRAYSCALE)
-            pseudo_gt_map = cv2.imread(pseudo_gt_map_path, cv2.IMREAD_GRAYSCALE)
+            annotated_image = cv2.imread(annotated_img_path, cv2.IMREAD_ANYDEPTH)
+            velodyne_image = cv2.imread(velodyne_img_path, cv2.IMREAD_ANYDEPTH)
+            pseudo_depth_map = cv2.imread(pseudo_depth_map_path, cv2.IMREAD_ANYDEPTH)
+            pseudo_gt_map = cv2.imread(pseudo_gt_map_path, cv2.IMREAD_ANYDEPTH)
             raw_image = cv2.imread(raw_img_path)
             raw_image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB)
 
@@ -85,11 +85,16 @@ class KITTIDepthDataset(Dataset):
             raw_image = cv2.resize(raw_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
 
             # Normalize images
+            annotated_image = annotated_image / 256.0
+            velodyne_image = velodyne_image / 256.0
+            pseudo_depth_map = pseudo_depth_map / 256.0
+            pseudo_gt_map = pseudo_gt_map / 256.0
+            raw_image = raw_image / 256.0
+
             annotated_image = normalize_non_zero_pixels(annotated_image)
             velodyne_image = normalize_non_zero_pixels(velodyne_image)
             pseudo_depth_map = normalize_non_zero_pixels(pseudo_depth_map)
             pseudo_gt_map = normalize_non_zero_pixels(pseudo_gt_map)
-            raw_image = raw_image / 255.0
     	
             sample = {
                 'annotated_image': annotated_image,
@@ -110,8 +115,8 @@ class KITTIDepthDataset(Dataset):
 
             test_image = cv2.imread(test_image_path)
             test_image = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
-            test_velodyne_image = cv2.imread(test_velodyne_path, cv2.IMREAD_GRAYSCALE)
-            test_depth_image = cv2.imread(test_depth_path, cv2.IMREAD_GRAYSCALE)
+            test_velodyne_image = cv2.imread(test_velodyne_path, cv2.IMREAD_ANYDEPTH)
+            test_depth_image = cv2.imread(test_depth_path, cv2.IMREAD_ANYDEPTH)
 
             # Resize images
             test_image = cv2.resize(test_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
@@ -119,9 +124,15 @@ class KITTIDepthDataset(Dataset):
             test_depth_image = cv2.resize(test_depth_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
 
             # Normalize images
-            test_velodyne_image = normalize_non_zero_pixels(test_velodyne_image)
-            test_depth_image = normalize_non_zero_pixels(test_depth_image)
+            annotated_image = annotated_image / 256.0
+            velodyne_image = velodyne_image / 256.0
+            pseudo_depth_map = pseudo_depth_map / 256.0
+            raw_image = raw_image / 256.0
 
+            annotated_image = normalize_non_zero_pixels(annotated_image)
+            velodyne_image = normalize_non_zero_pixels(velodyne_image)
+            pseudo_depth_map = normalize_non_zero_pixels(pseudo_depth_map)
+            
             sample = {
                 'test_image': test_image,
                 'test_velodyne_image': test_velodyne_image,

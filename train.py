@@ -10,7 +10,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torchvision.transforms import transforms
 from tqdm import tqdm
 from Submodules.loss.total_loss import total_loss
-from dataloader.sub_dataLoader import KITTIDepthDataset, ToTensor
+from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
 import numpy as np
 
