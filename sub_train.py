@@ -71,7 +71,7 @@ def train(model, device, train_loader, optimizer, epoch, writer, rank):
 
         dense_depth = model(raw_image, velodyne_image, pseudo_depth_map, device).to(device)
 
-        t_loss, s_loss, d_loss = total_loss(rader_image, annotated_image, dense_depth)
+        t_loss, s_loss, d_loss = total_loss(pseudo_gt_map, annotated_image, dense_depth)
         t_loss.backward()
         optimizer.step()
 
