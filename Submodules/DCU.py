@@ -194,5 +194,6 @@ class depthCompletionNew_blockN(nn.Module):
         out2 = self.predict_normal2(concat2)
         normal2 = out2
         normal2 = normal2[:,1,:,:]
+        normal2 = normal2.unsqueeze(1)
 
         return normal2, concat2
