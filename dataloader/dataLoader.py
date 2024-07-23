@@ -21,8 +21,8 @@ class KITTIDepthDataset(Dataset):
         if mode in ['train', 'val']:
             self.annotated_paths = self._get_file_paths(os.path.join(root_dir, 'data_depth_annotated', mode))
             self.velodyne_paths = self._get_file_paths(os.path.join(root_dir, 'data_depth_velodyne', mode))
-            self.pseudo_depth_paths = self._get_file_paths(os.path.join(root_dir, 'pseudo_depth_map', mode))
-            self.pseudo_gt_paths = self._get_file_paths(os.path.join(root_dir, 'pseudo_gt_map', mode))
+            self.pseudo_depth_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_depth_map', mode))
+            self.pseudo_gt_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_gt_map', mode))
             self.raw_paths = self._get_raw_file_paths(os.path.join(root_dir, 'kitti_raw'), self.annotated_paths)
         elif mode == 'test':
             self.test_image_paths = self._get_file_paths(
@@ -54,9 +54,9 @@ class KITTIDepthDataset(Dataset):
 
     def __len__(self):
         if self.mode in ['train', 'val']:
-            return min(len(self.annotated_paths), len(self.velodyne_paths), len(self.pseudo_depth_paths), len(self.pseudo_gt_paths), len(self.raw_paths))
+            return min(len(self.annotated_paths), len(self.velodyne_paths), len(self.pseudo_depth_map), len(self.pseudo_gt_map), len(self.raw_paths))
         elif self.mode == 'test':
-            return min(len(self.test_image_paths), len(self.test_velodyne_paths), len(self.test_depth_path))
+            return min(len(self.test_image_paths), len(self.test_velodyne_paths), len(self.test_depth_path), len(self.test_radar_paths))
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -65,8 +65,8 @@ class KITTIDepthDataset(Dataset):
         if self.mode in ['train', 'val']:
             annotated_img_path = self.annotated_paths[idx]
             velodyne_img_path = self.velodyne_paths[idx]
-            pseudo_depth_map_path = self.pseudo_depth_paths[idx]
-            pseudo_gt_map_path = self.pseudo_gt_paths[idx]
+            pseudo_depth_map_path = self.pseudo_depth_map[idx]
+            pseudo_gt_map_path = self.pseudo_gt_map[idx]
             raw_img_path = self.raw_paths[idx]
 
             annotated_image = cv2.imread(annotated_img_path, cv2.IMREAD_ANYDEPTH)
@@ -74,7 +74,11 @@ class KITTIDepthDataset(Dataset):
             pseudo_depth_map = cv2.imread(pseudo_depth_map_path, cv2.IMREAD_ANYDEPTH)
             pseudo_gt_map = cv2.imread(pseudo_gt_map_path, cv2.IMREAD_ANYDEPTH)
             raw_image = cv2.imread(raw_img_path)
-            raw_image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB)
+
+            #Debug
+            if raw_image is None:
+                print(f"Error loading image at path: {raw_img_path}. Corresponding velodyne image path: {velodyne_img_path}")
+                raise ValueError(f"Error loading image at path: {raw_img_path}")
 
             # Resize images
             annotated_image = cv2.resize(annotated_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
@@ -115,7 +119,6 @@ class KITTIDepthDataset(Dataset):
             test_velodyne_image = cv2.imread(test_velodyne_path, cv2.IMREAD_ANYDEPTH)
             test_depth_image = cv2.imread(test_depth_path, cv2.IMREAD_ANYDEPTH)
             test_image = cv2.imread(test_image_path)
-            test_image = cv2.cvtColor(test_image)
 
             # Resize images
             test_velodyne_image = cv2.resize(test_velodyne_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
