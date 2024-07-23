@@ -8,9 +8,9 @@ class KITTIDepthDataset(Dataset):
     def __init__(self, root_dir, mode='train', transform=None):
         """
         Args:
-            root_dir (string): Directory with all the dataset folders.
-            mode (string): 'train', 'val', or 'test' to specify the dataset split.
-            transform (callable, optional): Optional transform to be applied on a sample.
+            root_dir (string): 모든 데이터셋 폴더가 있는 디렉터리.
+            mode (string): 'train', 'val', 'test' 중 데이터셋 분할을 지정.
+            transform (callable, optional): 샘플에 적용할 선택적 변환 함수.
         """
         self.root_dir = root_dir
         self.mode = mode
@@ -23,7 +23,7 @@ class KITTIDepthDataset(Dataset):
             self.velodyne_paths = self._get_file_paths(os.path.join(root_dir, 'data_depth_velodyne', mode))
             self.pseudo_depth_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_depth_map', mode))
             self.pseudo_gt_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_gt_map', mode))
-            self.raw_paths = self._get_raw_file_paths(os.path.join(root_dir, 'kitti_raw'), self.annotated_paths)
+            self.raw_paths = self._get_corresponding_raw_paths(os.path.join(root_dir, 'kitti_raw'), self.velodyne_paths)
         elif mode == 'test':
             self.test_image_paths = self._get_file_paths(
                 os.path.join(root_dir, 'data_depth_selection', 'depth_selection', 'test_depth_completion_anonymous', 'image'))
@@ -43,12 +43,12 @@ class KITTIDepthDataset(Dataset):
                     file_paths.append(os.path.join(root, file))
         return sorted(file_paths)
 
-    def _get_raw_file_paths(self, raw_dir, reference_paths):
+    def _get_corresponding_raw_paths(self, raw_dir, reference_paths):
+        reference_filenames = set(os.path.basename(path) for path in reference_paths)
         raw_file_paths = []
-        reference_files = set(os.path.basename(path) for path in reference_paths)
         for root, _, files in os.walk(raw_dir):
             for file in files:
-                if file in reference_files:
+                if file in reference_filenames:
                     raw_file_paths.append(os.path.join(root, file))
         return sorted(raw_file_paths)
 
@@ -56,7 +56,7 @@ class KITTIDepthDataset(Dataset):
         if self.mode in ['train', 'val']:
             return min(len(self.annotated_paths), len(self.velodyne_paths), len(self.pseudo_depth_map), len(self.pseudo_gt_map), len(self.raw_paths))
         elif self.mode == 'test':
-            return min(len(self.test_image_paths), len(self.test_velodyne_paths), len(self.test_depth_path), len(self.test_radar_paths))
+            return min(len(self.test_image_paths), len(self.test_velodyne_paths), len(self.test_depth_path))
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -69,25 +69,26 @@ class KITTIDepthDataset(Dataset):
             pseudo_gt_map_path = self.pseudo_gt_map[idx]
             raw_img_path = self.raw_paths[idx]
 
+            print(f"Loading annotated image from: {annotated_img_path}")
+            print(f"Loading velodyne image from: {velodyne_img_path}")
+            print(f"Loading pseudo depth map from: {pseudo_depth_map_path}")
+            print(f"Loading pseudo ground truth map from: {pseudo_gt_map_path}")
+            print(f"Loading raw image from: {raw_img_path}")
+
             annotated_image = cv2.imread(annotated_img_path, cv2.IMREAD_ANYDEPTH)
             velodyne_image = cv2.imread(velodyne_img_path, cv2.IMREAD_ANYDEPTH)
             pseudo_depth_map = cv2.imread(pseudo_depth_map_path, cv2.IMREAD_ANYDEPTH)
             pseudo_gt_map = cv2.imread(pseudo_gt_map_path, cv2.IMREAD_ANYDEPTH)
             raw_image = cv2.imread(raw_img_path)
 
-            #Debug
-            if raw_image is None:
-                print(f"Error loading image at path: {raw_img_path}. Corresponding velodyne image path: {velodyne_img_path}")
-                raise ValueError(f"Error loading image at path: {raw_img_path}")
-
-            # Resize images
+            # 이미지 크기 조정
             annotated_image = cv2.resize(annotated_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
             velodyne_image = cv2.resize(velodyne_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
             pseudo_depth_map = cv2.resize(pseudo_depth_map, self.resize_shape, interpolation=cv2.INTER_CUBIC)
             pseudo_gt_map = cv2.resize(pseudo_gt_map, self.resize_shape, interpolation=cv2.INTER_CUBIC)
             raw_image = cv2.resize(raw_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
 
-            # Normalize images
+            # 이미지 정규화
             annotated_image = annotated_image / 256.0
             velodyne_image = velodyne_image / 256.0
             pseudo_depth_map = pseudo_depth_map / 256.0
@@ -120,12 +121,12 @@ class KITTIDepthDataset(Dataset):
             test_depth_image = cv2.imread(test_depth_path, cv2.IMREAD_ANYDEPTH)
             test_image = cv2.imread(test_image_path)
 
-            # Resize images
+            # 이미지 크기 조정
             test_velodyne_image = cv2.resize(test_velodyne_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
             test_depth_image = cv2.resize(test_depth_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
             test_image = cv2.resize(test_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
 
-            # Normalize images
+            # 이미지 정규화
             test_velodyne_image = test_velodyne_image / 256.0
             test_depth_image = test_depth_image / 256.0
             test_image = test_image / 256.0
@@ -145,7 +146,7 @@ class KITTIDepthDataset(Dataset):
             return sample
 
 class ToTensor(object):
-    """Convert ndarrays in sample to Tensors."""
+    """샘플의 ndarray를 텐서로 변환."""
 
     def __call__(self, sample):
         if 'annotated_image' in sample:
@@ -177,7 +178,7 @@ def normalize_non_zero_pixels(pixels):
     non_zero_mask = (pixels != 0)
     non_zero_pixels = pixels[non_zero_mask]
 
-    if non_zero_pixels.size == 0:  # If all pixels are zero
+    if non_zero_pixels.size == 0:  # 모든 픽셀이 0인 경우
         return pixels.astype(np.float32)
     
     normalized_pixels = (non_zero_pixels - np.min(non_zero_pixels)) / (np.max(non_zero_pixels) - np.min(non_zero_pixels))
