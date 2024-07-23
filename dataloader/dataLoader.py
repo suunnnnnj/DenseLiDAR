@@ -115,7 +115,7 @@ class KITTIDepthDataset(Dataset):
             test_velodyne_image = cv2.imread(test_velodyne_path, cv2.IMREAD_ANYDEPTH)
             test_depth_image = cv2.imread(test_depth_path, cv2.IMREAD_ANYDEPTH)
             test_image = cv2.imread(test_image_path)
-            test_image = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
+            test_image = cv2.cvtColor(test_image)
 
             # Resize images
             test_velodyne_image = cv2.resize(test_velodyne_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
