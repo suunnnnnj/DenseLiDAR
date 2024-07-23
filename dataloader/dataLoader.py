@@ -20,7 +20,10 @@ class KITTIDepthDataset(Dataset):
 
         if mode in ['train', 'val']:
             self.raw_paths = self._get_file_paths(os.path.join(root_dir, 'kitti_raw', mode))
-            self.annotated_paths, self.velodyne_paths, self.pseudo_depth_map, self.pseudo_gt_map = self._get_corresponding_paths(root_dir, self.raw_paths, mode)
+            self.annotated_paths = self._get_file_paths(os.path.join(root_dir, 'data_depth_annotated', mode))
+            self.velodyne_paths = self._get_file_paths(os.path.join(root_dir, 'data_depth_velodyne', mode))
+            self.pseudo_depth_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_depth_map', mode))
+            self.pseudo_gt_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_gt_map', mode))
 
             # 경로 확인
             print(f"Total raw paths: {len(self.raw_paths)}")
@@ -48,48 +51,9 @@ class KITTIDepthDataset(Dataset):
                     file_paths.append(os.path.join(root, file))
         return sorted(file_paths)
 
-    def _get_corresponding_paths(self, root_dir, raw_paths, mode):
-        annotated_paths = []
-        velodyne_paths = []
-        pseudo_depth_map = []
-        pseudo_gt_map = []
-
-        for raw_path in raw_paths:
-            filename = os.path.basename(raw_path)
-            date_drive = self._get_date_drive_from_path(raw_path)
-            annotated_path = self._find_file_in_subdirs(os.path.join(root_dir, 'data_depth_annotated', mode), filename)
-            velodyne_path = self._find_file_in_subdirs(os.path.join(root_dir, 'data_depth_velodyne', mode), filename)
-            pseudo_depth_map_path = self._find_file_in_subdirs(os.path.join(root_dir, 'pseudo_depth_map', mode), filename)
-            pseudo_gt_map_path = self._find_file_in_subdirs(os.path.join(root_dir, 'pseudo_gt_map', mode), filename)
-
-            # 디버깅 출력
-            print(f"Checking paths for {filename}:")
-            print(f"Annotated path: {annotated_path}, Exists: {annotated_path is not None}")
-            print(f"Velodyne path: {velodyne_path}, Exists: {velodyne_path is not None}")
-            print(f"Pseudo depth map path: {pseudo_depth_map_path}, Exists: {pseudo_depth_map_path is not None}")
-            print(f"Pseudo GT map path: {pseudo_gt_map_path}, Exists: {pseudo_gt_map_path is not None}")
-
-            if annotated_path and velodyne_path and pseudo_depth_map_path and pseudo_gt_map_path:
-                annotated_paths.append(annotated_path)
-                velodyne_paths.append(velodyne_path)
-                pseudo_depth_map.append(pseudo_depth_map_path)
-                pseudo_gt_map.append(pseudo_gt_map_path)
-
-        return annotated_paths, velodyne_paths, pseudo_depth_map, pseudo_gt_map
-
-    def _get_date_drive_from_path(self, path):
-        # Assuming the date_drive is the parent folder of the _sync folder
-        return os.path.basename(os.path.dirname(path))
-
-    def _find_file_in_subdirs(self, root_dir, filename):
-        for root, _, files in os.walk(root_dir):
-            if filename in files:
-                return os.path.join(root, filename)
-        return None
-
     def __len__(self):
         if self.mode in ['train', 'val']:
-            return len(self.raw_paths)
+            return min(len(self.raw_paths), len(self.annotated_paths), len(self.velodyne_paths), len(self.pseudo_depth_map), len(self.pseudo_gt_map))
         elif self.mode == 'test':
             return min(len(self.test_image_paths), len(self.test_velodyne_paths), len(self.test_depth_path))
     
@@ -98,8 +62,8 @@ class KITTIDepthDataset(Dataset):
             idx = idx.tolist()
 
         if self.mode in ['train', 'val']:
-            if idx >= len(self.annotated_paths):
-                raise IndexError(f"Index {idx} out of range for dataset with length {len(self.annotated_paths)}")
+            if idx >= len(self.raw_paths):
+                raise IndexError(f"Index {idx} out of range for dataset with length {len(self.raw_paths)}")
 
             raw_img_path = self.raw_paths[idx]
             annotated_img_path = self.annotated_paths[idx]
@@ -190,7 +154,7 @@ class ToTensor(object):
     """샘플의 ndarray를 텐서로 변환."""
 
     def __call__(self, sample):
-        if 'annotated_image' in sample:
+        if 'raw_image' in sample:
             raw_image = sample['raw_image']
             annotated_image = sample['annotated_image']
             velodyne_image = sample['velodyne_image']
