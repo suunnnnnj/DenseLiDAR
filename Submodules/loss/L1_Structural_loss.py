@@ -78,7 +78,6 @@ class SSIM(torch.nn.Module):
         if img1.is_cuda:
             window = window.cuda(img1.get_device())
         window = window.type_as(img1)
-
         return _ssim(img1, img2, window, self.window_size, self.channel, self.size_average)
 
 def ssim(img1, img2, window_size=11, size_average=True):
@@ -91,7 +90,6 @@ def ssim(img1, img2, window_size=11, size_average=True):
     if img1.is_cuda:
         window = window.cuda(img1.get_device())
     window = window.type_as(img1)
-
     return _ssim(img1, img2, window, window_size, 1, size_average)
 
 def l_ssim(pseudo_gt, dense_depth):

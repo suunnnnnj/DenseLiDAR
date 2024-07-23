@@ -6,6 +6,6 @@ def total_loss(pseudo_gt, lidar_data, dense_depth):
     depth_loss = L2_depth_loss(lidar_data, dense_depth)
 
     loss = structural_loss + depth_loss
-    
+
     return loss, structural_loss, depth_loss
 

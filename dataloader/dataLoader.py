@@ -1,7 +1,6 @@
 import os
 import torch
 from torch.utils.data import Dataset
-import torchvision.transforms as transforms
 import cv2
 import numpy as np
 
@@ -109,34 +108,32 @@ class KITTIDepthDataset(Dataset):
             return sample
 
         elif self.mode == 'test':
-            test_image_path = self.test_image_paths[idx]
             test_velodyne_path = self.test_velodyne_paths[idx]
             test_depth_path = self.test_depth_path[idx]
+            test_image_path = self.test_image_paths[idx]
 
-            test_image = cv2.imread(test_image_path)
-            test_image = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
             test_velodyne_image = cv2.imread(test_velodyne_path, cv2.IMREAD_ANYDEPTH)
             test_depth_image = cv2.imread(test_depth_path, cv2.IMREAD_ANYDEPTH)
+            test_image = cv2.imread(test_image_path)
+            test_image = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
 
             # Resize images
-            test_image = cv2.resize(test_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
             test_velodyne_image = cv2.resize(test_velodyne_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
             test_depth_image = cv2.resize(test_depth_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
+            test_image = cv2.resize(test_image, self.resize_shape, interpolation=cv2.INTER_CUBIC)
 
             # Normalize images
-            annotated_image = annotated_image / 256.0
-            velodyne_image = velodyne_image / 256.0
-            pseudo_depth_map = pseudo_depth_map / 256.0
-            raw_image = raw_image / 256.0
+            test_velodyne_image = test_velodyne_image / 256.0
+            test_depth_image = test_depth_image / 256.0
+            test_image = test_image / 256.0
 
-            annotated_image = normalize_non_zero_pixels(annotated_image)
-            velodyne_image = normalize_non_zero_pixels(velodyne_image)
-            pseudo_depth_map = normalize_non_zero_pixels(pseudo_depth_map)
+            test_velodyne_image = normalize_non_zero_pixels(test_velodyne_image)
+            test_depth_image = normalize_non_zero_pixels(test_depth_image)
             
             sample = {
-                'test_image': test_image,
                 'test_velodyne_image': test_velodyne_image,
                 'test_depth_image': test_depth_image,
+                'test_image': test_image
             }
 
             if self.transform:
@@ -154,6 +151,7 @@ class ToTensor(object):
             pseudo_depth_map = sample['pseudo_depth_map']
             pseudo_gt_map = sample['pseudo_gt_map']
             raw_image = sample['raw_image']
+
             return {
                 'annotated_image': torch.tensor(annotated_image, dtype=torch.float32).unsqueeze(0),
                 'velodyne_image': torch.tensor(velodyne_image, dtype=torch.float32).unsqueeze(0),
@@ -162,21 +160,26 @@ class ToTensor(object):
                 'raw_image': torch.tensor(raw_image, dtype=torch.float32).permute(2, 0, 1)
             }
         else:
-            test_image = sample['test_image']
             test_velodyne_image = sample['test_velodyne_image']
             test_depth_image = sample['test_depth_image']
+            test_image = sample['test_image']
+
             return {
-                'test_image': torch.tensor(test_image, dtype=torch.float32).permute(2, 0, 1),
                 'test_velodyne_image': torch.tensor(test_velodyne_image, dtype=torch.float32).unsqueeze(0),
                 'test_depth_image': torch.tensor(test_depth_image, dtype=torch.float32).unsqueeze(0),
+                'test_image': torch.tensor(test_image, dtype=torch.float32).permute(2, 0, 1)
             }
 
 def normalize_non_zero_pixels(pixels):
-    non_zero_mask = pixels != 0
+    non_zero_mask = (pixels != 0)
     non_zero_pixels = pixels[non_zero_mask]
-    if non_zero_pixels.size == 0:  # 0이 아닌 픽셀 값이 없으면 그대로 반환
+
+    if non_zero_pixels.size == 0:  # If all pixels are zero
         return pixels.astype(np.float32)
+    
     normalized_pixels = (non_zero_pixels - np.min(non_zero_pixels)) / (np.max(non_zero_pixels) - np.min(non_zero_pixels))
+    
     result = np.zeros_like(pixels, dtype=np.float32)
     result[non_zero_mask] = normalized_pixels
+
     return result

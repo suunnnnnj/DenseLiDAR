@@ -35,14 +35,17 @@ def adaptative_cat3(out_conv, out_deconv, out_depth_up):
     out_deconv = out_deconv[:, :, :out_conv.size(2), :out_conv.size(3)]
     out_depth_up = out_depth_up[:, :, :out_conv.size(2), :out_conv.size(3)]
     return torch.cat((out_conv, out_deconv, out_depth_up), 1)
+
 def adaptative_cat2(out_conv,out_sparse):
     out_sparse = out_sparse[:, :, :out_conv.size(2), :out_conv.size(3)]
     return torch.cat((out_conv, out_sparse), 1)
+
 def adaptative_cat4(out_conv, out_deconv, out_depth_up,out_sparse):
     out_deconv = out_deconv[:, :, :out_conv.size(2), :out_conv.size(3)]
     out_depth_up = out_depth_up[:, :, :out_conv.size(2), :out_conv.size(3)]
     out_sparse = out_sparse[:, :, :out_conv.size(2), :out_conv.size(3)]
     return torch.cat((out_conv, out_deconv, out_depth_up, out_sparse), 1)
+
 def adaptative_cat(out_conv, out_deconv, out_depth_up):
     out_deconv = out_deconv[:, :, :out_conv.size(2), :out_conv.size(3)]
     out_depth_up = out_depth_up[:, :, :out_conv.size(2), :out_conv.size(3)]

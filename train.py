@@ -12,7 +12,6 @@ from tqdm import tqdm
 from Submodules.loss.total_loss import total_loss
 from dataloader.dataLoader import KITTIDepthDataset, ToTensor
 from model import DenseLiDAR
-import numpy as np
 
 parser = argparse.ArgumentParser(description='depthCompletion')
 parser.add_argument('--datapath', default='datasets/', help='datapath')
@@ -131,17 +130,17 @@ def main(rank, world_size):
     torch.cuda.set_device(rank)
     device = torch.device(f'cuda:{rank}')
 
-    batch_size = args.batch_size
-
-    writer = None
-    if rank == 0:
-        writer = SummaryWriter()
-
     root_dir = args.datapath
+    num_epochs = args.epochs
+    batch_size = args.batch_size
 
     train_transform = transforms.Compose([
         ToTensor()
     ])
+
+    writer = None
+    if rank == 0:
+        writer = SummaryWriter()
 
     # Load train dataset
     try:
@@ -174,7 +173,6 @@ def main(rank, world_size):
     best_model_state = None
     best_optimizer_state = None
 
-    num_epochs = args.epochs
     for epoch in range(num_epochs):
         train_sampler.set_epoch(epoch)
         train(model, device, train_loader, optimizer, epoch, writer, rank)
@@ -201,8 +199,7 @@ def main(rank, world_size):
 
 
 if __name__ == "__main__":
-    args.world_size = args.gpu_nums
     batch_size = int(args.batch_size / args.gpu_nums)
-
-    world_size = args.world_size
+    world_size = args.gpu_nums
+    
     mp.spawn(main, args=(world_size,), nprocs=world_size, join=True)
