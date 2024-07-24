@@ -53,13 +53,18 @@ def default_loader(path):
     img = skimage.io.imread(path)
     return img
 
-def point_loader(path, title):
-    img = skimage.io.imread(path)
-    print(title)
-    print(img.shape)
-    depth = img *1.0 / 256.0
-    depth = np.reshape(depth, [img.shape[0], img.shape[1], 1]).astype(np.float32)
-    return depth
+def point_loader(path):
+    try:
+        img = skimage.io.imread(path)
+        print(f"Loaded image shape: {img.shape} from path: {path}")
+        depth = img * 1.0 / 256.0
+        print(f"Depth shape before reshape: {depth.shape}, size: {depth.size}")
+        depth = np.reshape(depth, [img.shape[0], img.shape[1], 1]).astype(np.float32)
+        print(f"Depth shape after reshape: {depth.shape}")
+        return depth
+    except Exception as e:
+        print(f"Error loading or reshaping image from path: {path}, Error: {e}")
+        raise
 
 class myImageFloder(data.Dataset):
     def __init__(self, left,sparse,gtp,p_depth,gt_depth,training,   #raw image, raw lidar, gt lidar, pseudo depth, gt depth
@@ -81,6 +86,7 @@ class myImageFloder(data.Dataset):
         gt_depth = self.gt_depth[index]
 
         left_img = self.loader(left)
+        #Left image loaded with shape: (375, 1242, 3) from path: sample/kitti_raw/train/2011_09_26_drive_0001_sync/proj_depth/image_02/0000000002.png
 
         index_str = self.left[index].split('/')[-4][0:10]
         params_t = INSTICS[index_str]
@@ -88,13 +94,15 @@ class myImageFloder(data.Dataset):
         params[:, :, 0] = params[:,:,0] * params_t[0]
         params[:, :, 1] = params[:, :, 1] * params_t[1]
         params[:, :, 2] = params[:, :, 2] * params_t[2]
+        #Params initialized with shape: (256, 512, 3)
 
         h,w,c= left_img.shape
         # dataload 및 정규화
-        gt_point = self.gtploader(gtp, 'gt_p')
-        sparse = self.ploader(sparse, 'sparse')
-        p_depth = self.ploader(p_depth, 'p')
-        gt_depth = self.ploader(gt_depth, 'gt_d')
+        gt_point = self.gtploader(gtp)
+        sparse = self.ploader(sparse)
+        p_depth = self.ploader(p_depth)
+        gt_depth = self.ploader(gt_depth)
+        # Data loaded: gt_point (375, 1242, 1), sparse (375, 1242, 1), p_depth (375, 1242, 1), gt_depth (375, 1242, 1)
 
         #random crop
         th, tw = 256,512
@@ -108,14 +116,15 @@ class myImageFloder(data.Dataset):
         p_depth = p_depth[y1:y1 + th, x1:x1 + tw, :]
         gt_depth = gt_depth[y1:y1 + th, x1:x1 + tw, :]
         processed = get_transform(augment=False)
-
-        #ToTensor
+        # Cropped data shapes: left_img (256, 512, 3), gt_point (256, 512, 1), sparse (256, 512, 1), p_depth (256, 512, 1), gt_depth (256, 512, 1)
+        # ToTensor
         left_img = processed(left_img)
         sparse = processed(sparse)
         p_depth = processed(p_depth)
         gt_depth = processed(gt_depth)
         gt_point = processed(gt_point)
-        #gt_point 즉 loss에 사용될 데이터는 왜 tensor화 안하는지..?
+        # Data transformed: left_img torch.Size([3, 256, 512]), sparse torch.Size([1, 256, 512]), p_depth torch.Size([1, 256, 512]), gt_depth torch.Size([1, 256, 512]), gt_point torch.Size([1, 256, 512])
+
         return left_img,gt_point,sparse,p_depth,gt_depth,params
 
     def __len__(self):
