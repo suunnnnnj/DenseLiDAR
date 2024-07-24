@@ -1,3 +1,4 @@
+#data loader
 import os
 import torch
 from torch.utils.data import Dataset
@@ -25,12 +26,16 @@ class KITTIDepthDataset(Dataset):
             self.pseudo_depth_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_depth_map', mode))
             self.pseudo_gt_map = self._get_file_paths(os.path.join(root_dir, 'pseudo_gt_map', mode))
 
-            # 경로 확인
-            print(f"Total raw paths: {len(self.raw_paths)}")
-            print(f"Total annotated paths: {len(self.annotated_paths)}")
-            print(f"Total velodyne paths: {len(self.velodyne_paths)}")
-            print(f"Total pseudo depth map paths: {len(self.pseudo_depth_map)}")
-            print(f"Total pseudo gt map paths: {len(self.pseudo_gt_map)}")
+            # 공통된 파일 경로 유지하도록 경로 필터링
+            common_files = self._filter_common_files(mode)
+
+            print(f"Common files: {len(common_files)}")
+
+            self.raw_paths = [path for path in self.raw_paths if self._get_relative_path(path, mode) in common_files]
+            self.annotated_paths = [path for path in self.annotated_paths if self._get_relative_path(path, mode) in common_files]
+            self.velodyne_paths = [path for path in self.velodyne_paths if self._get_relative_path(path, mode) in common_files]
+            self.pseudo_depth_map = [path for path in self.pseudo_depth_map if self._get_relative_path(path, mode) in common_files]
+            self.pseudo_gt_map = [path for path in self.pseudo_gt_map if self._get_relative_path(path, mode) in common_files]
 
         elif mode == 'test':
             self.test_image_paths = self._get_file_paths(
@@ -51,31 +56,49 @@ class KITTIDepthDataset(Dataset):
                     file_paths.append(os.path.join(root, file))
         return sorted(file_paths)
 
+    def _get_relative_path(self, path, base_folder):
+        parts = path.split('/')
+        try:
+            base_idx = parts.index(base_folder)
+            return '/'.join(parts[base_idx:])
+        except ValueError:
+            return None
+
+    def _filter_common_files(self, mode):
+        raw_relative_paths = set(self._get_relative_path(path, mode) for path in self.raw_paths)
+        annotated_relative_paths = set(self._get_relative_path(path, mode) for path in self.annotated_paths)
+        velodyne_relative_paths = set(self._get_relative_path(path, mode) for path in self.velodyne_paths)
+        pseudo_depth_map_relative_paths = set(self._get_relative_path(path, mode) for path in self.pseudo_depth_map)
+        pseudo_gt_map_relative_paths = set(self._get_relative_path(path, mode) for path in self.pseudo_gt_map)
+
+        # None 값을 제거
+        raw_relative_paths.discard(None)
+        annotated_relative_paths.discard(None)
+        velodyne_relative_paths.discard(None)
+        pseudo_depth_map_relative_paths.discard(None)
+        pseudo_gt_map_relative_paths.discard(None)
+
+        return raw_relative_paths & annotated_relative_paths & velodyne_relative_paths & pseudo_depth_map_relative_paths & pseudo_gt_map_relative_paths
+
     def __len__(self):
         if self.mode in ['train', 'val']:
-            return min(len(self.raw_paths), len(self.annotated_paths), len(self.velodyne_paths), len(self.pseudo_depth_map), len(self.pseudo_gt_map))
+            return len(self.raw_paths)
         elif self.mode == 'test':
             return min(len(self.test_image_paths), len(self.test_velodyne_paths), len(self.test_depth_path))
-    
+
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
         if self.mode in ['train', 'val']:
-            if idx >= len(self.raw_paths):
-                raise IndexError(f"Index {idx} out of range for dataset with length {len(self.raw_paths)}")
+            if idx >= len(self.annotated_paths):
+                raise IndexError(f"Index {idx} out of range for dataset with length {len(self.annotated_paths)}")
 
             raw_img_path = self.raw_paths[idx]
             annotated_img_path = self.annotated_paths[idx]
             velodyne_img_path = self.velodyne_paths[idx]
             pseudo_depth_map_path = self.pseudo_depth_map[idx]
             pseudo_gt_map_path = self.pseudo_gt_map[idx]
-
-            print(f"Loading raw image from: {raw_img_path}")
-            print(f"Loading annotated image from: {annotated_img_path}")
-            print(f"Loading velodyne image from: {velodyne_img_path}")
-            print(f"Loading pseudo depth map from: {pseudo_depth_map_path}")
-            print(f"Loading pseudo ground truth map from: {pseudo_gt_map_path}")
 
             raw_image = cv2.imread(raw_img_path)
             annotated_image = cv2.imread(annotated_img_path, cv2.IMREAD_ANYDEPTH)
@@ -154,7 +177,7 @@ class ToTensor(object):
     """샘플의 ndarray를 텐서로 변환."""
 
     def __call__(self, sample):
-        if 'raw_image' in sample:
+        if 'annotated_image' in sample:
             raw_image = sample['raw_image']
             annotated_image = sample['annotated_image']
             velodyne_image = sample['velodyne_image']
