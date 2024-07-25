@@ -1,1 +1,7 @@
 best_model.tar
+datasets/
+__pycache__/
+Submodules/__pycache__/
+Submodules/loss/__pycache__/
+Submodules/utils/__pycache__/
+test_dataloader/__pycache__/
