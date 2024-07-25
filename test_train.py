@@ -75,6 +75,23 @@ def train(inputl,gt1,sparse,pseudo,dense,params):
 
         return t_loss, s_loss, d_loss
 
+def validate(inputl, gt1, sparse, pseudo, dense, params):
+    device = 'cuda'
+    model.eval()
+    inputl = Variable(torch.FloatTensor(inputl))
+    gt1 = Variable(torch.FloatTensor(gt1))
+    sparse = Variable(torch.FloatTensor(sparse))
+    pseudo = Variable(torch.FloatTensor(pseudo))
+    dense = Variable(torch.FloatTensor(dense))
+    params = Variable(torch.FloatTensor(params))
+    if args.cuda:
+        inputl, gt1, sparse, pseudo, dense, params = inputl.cuda(), gt1.cuda(), sparse.cuda(), pseudo.cuda(), dense.cuda(), params.cuda()
+
+    dense_depth = model(inputl, sparse, pseudo, device)
+    t_loss, s_loss, d_loss = total_loss(dense, gt1, dense_depth)
+
+    return t_loss, s_loss, d_loss
+
 def main():
     start_full_time = time.time()
 
@@ -90,6 +107,19 @@ def main():
             total_train_loss += loss
 
         print('epoch %d total training loss = %.10f' %(epoch, total_train_loss/len(TrainImgLoader)))
+
+        ## validation ##
+        '''for batch_idx, (imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params) in tqdm(
+                enumerate(ValImgLoader), total=len(ValImgLoader),
+                desc=f"Epoch {epoch}"):  # rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
+            start_time = time.time()
+
+            loss, loss1, loss2 = validate(imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params)
+            print('Iter %d / %d validation loss = %.4f, Ploss = %.4f, n_loss = %.4f, time = %.2f' % (
+            batch_idx, epoch, loss, loss1, loss2, time.time() - start_time))
+            total_val_loss += loss
+
+        print('epoch %d total validation loss = %.10f' % (epoch, total_val_loss / len(ValImgLoader)))'''
 
         #SAVE
         if epoch % 1 == 0:
