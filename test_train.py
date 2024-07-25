@@ -82,21 +82,23 @@ def train(inputl,gt1,sparse,pseudo,dense,params):
 def validate(inputl, gt1, sparse, pseudo, dense, params):
     device = 'cuda'
     model.eval()
-    inputl = Variable(torch.FloatTensor(inputl))
-    gt1 = Variable(torch.FloatTensor(gt1))
-    sparse = Variable(torch.FloatTensor(sparse))
-    pseudo = Variable(torch.FloatTensor(pseudo))
-    dense = Variable(torch.FloatTensor(dense))
-    params = Variable(torch.FloatTensor(params))
-    if args.cuda:
-        inputl, gt1, sparse, pseudo, dense, params = inputl.cuda(), gt1.cuda(), sparse.cuda(), pseudo.cuda(), dense.cuda(), params.cuda()
+    with torch.no_grad():
+        inputl = Variable(torch.FloatTensor(inputl))
+        gt1 = Variable(torch.FloatTensor(gt1))
+        sparse = Variable(torch.FloatTensor(sparse))
+        pseudo = Variable(torch.FloatTensor(pseudo))
+        dense = Variable(torch.FloatTensor(dense))
+        params = Variable(torch.FloatTensor(params))
+        if args.cuda:
+            inputl, gt1, sparse, pseudo, dense, params = inputl.cuda(), gt1.cuda(), sparse.cuda(), pseudo.cuda(), dense.cuda(), params.cuda()
 
-    dense_depth = model(inputl, sparse, pseudo, device)
-    t_loss, s_loss, d_loss = total_loss(dense, gt1, dense_depth)
+        dense_depth = model(inputl, sparse, pseudo, device)
+        t_loss, s_loss, d_loss = total_loss(dense, gt1, dense_depth)
 
     return t_loss, s_loss, d_loss
 
 def main():
+    torch.cuda.empty_cache()
     start_full_time = time.time()
 
     for epoch in range(1, args.epochs+1):
