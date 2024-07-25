@@ -35,56 +35,56 @@ def dataloader(filepath):
         
         # raw image
         imgsl = os.path.join(filepath_ri, seq, left_fold)
-        imagel = [os.path.join(imgsl, img) for img in os.listdir(imgsl)]
+        imagel = [os.path.join(imgsl, img) for img in os.listdir(imgsl) if is_image_file(img)]
         imagel.sort()
         images = np.append(images, imagel)
 
         imgsr = os.path.join(filepath_ri, seq, right_fold)
-        imager = [os.path.join(imgsr, img) for img in os.listdir(imgsr)]
+        imager = [os.path.join(imgsr, img) for img in os.listdir(imgsr) if is_image_file(img)]
         imager.sort()
         images = np.append(images, imager)
 
         # raw lidar
         lids2l = os.path.join(filepath_r1, seq, left_fold)
-        lidar2l = [os.path.join(lids2l, img) for img in os.listdir(lids2l)]
+        lidar2l = [os.path.join(lids2l, img) for img in os.listdir(lids2l) if is_image_file(img)]
         lidar2l.sort()
         lidars = np.append(lidars, lidar2l)
 
         lids2r = os.path.join(filepath_r1, seq, right_fold)
-        lidar2r = [os.path.join(lids2r, img) for img in os.listdir(lids2r)]
+        lidar2r = [os.path.join(lids2r, img) for img in os.listdir(lids2r) if is_image_file(img)]
         lidar2r.sort()
         lidars = np.append(lidars, lidar2r)
 
         # ground truth lidar
         gt_lidar = os.path.join(filepath_gtl, seq, left_fold)
-        gt_lidar = [os.path.join(gt_lidar, img) for img in os.listdir(gt_lidar)]
+        gt_lidar = [os.path.join(gt_lidar, img) for img in os.listdir(gt_lidar) if is_image_file(img)]
         gt_lidar.sort()
         depths = np.append(depths, gt_lidar)
 
         depsr = os.path.join(filepath_gtl, seq, right_fold)
-        depthr = [os.path.join(depsr, img) for img in os.listdir(depsr)]
+        depthr = [os.path.join(depsr, img) for img in os.listdir(depsr) if is_image_file(img)]
         depthr.sort()
         depths = np.append(depths, depthr)
 
         # pseudo depth map
         pseudo_dml = os.path.join(filepath_pd, seq, left_fold)
-        pseudo_dml = [os.path.join(pseudo_dml, img) for img in os.listdir(pseudo_dml)]
+        pseudo_dml = [os.path.join(pseudo_dml, img) for img in os.listdir(pseudo_dml) if is_image_file(img)]
         pseudo_dml.sort()
         pseudo = np.append(pseudo, pseudo_dml)
 
         pseudo_dmr = os.path.join(filepath_pd, seq, right_fold)
-        pseudo_dmr = [os.path.join(pseudo_dmr, img) for img in os.listdir(pseudo_dmr)]
+        pseudo_dmr = [os.path.join(pseudo_dmr, img) for img in os.listdir(pseudo_dmr) if is_image_file(img)]
         pseudo_dmr.sort()
         pseudo = np.append(pseudo, pseudo_dmr)
 
         # GT depth map
         dense_dml = os.path.join(filepath_dd, seq, left_fold)
-        dense_dml = [os.path.join(dense_dml, img) for img in os.listdir(dense_dml)]
+        dense_dml = [os.path.join(dense_dml, img) for img in os.listdir(dense_dml) if is_image_file(img)]
         dense_dml.sort()
         dense = np.append(dense, dense_dml)
 
         dense_dmr = os.path.join(filepath_dd, seq, right_fold)
-        dense_dmr = [os.path.join(dense_dmr, img) for img in os.listdir(dense_dmr)]
+        dense_dmr = [os.path.join(dense_dmr, img) for img in os.listdir(dense_dmr) if is_image_file(img)]
         dense_dmr.sort()
         dense = np.append(dense, dense_dmr)
 
