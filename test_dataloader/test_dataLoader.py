@@ -12,19 +12,22 @@ IMG_EXTENSIONS = [
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
-def dataloader(filepath):
+def dataloader(filepath, mode='train'):
     images = []
     lidars = []
     depths = []
     pseudo = []
     dense = []
 
+    if mode not in ['train', 'val']:
+        raise ValueError("mode should be either 'train' or 'val'")
+
     temp = filepath
-    filepath_ri = os.path.join(temp, 'kitti_raw/train')
-    filepath_gtl = os.path.join(temp, 'data_depth_annotated/train')
-    filepath_r1 = os.path.join(temp, 'data_depth_velodyne/train')
-    filepath_pd = os.path.join(temp, 'pseudo_depth_map/train')
-    filepath_dd = os.path.join(temp, 'pseudo_gt_map/train')
+    filepath_ri = os.path.join(temp, f'kitti_raw/{mode}')
+    filepath_gtl = os.path.join(temp, f'data_depth_annotated/{mode}')
+    filepath_r1 = os.path.join(temp, f'data_depth_velodyne/{mode}')
+    filepath_pd = os.path.join(temp, f'pseudo_depth_map/{mode}')
+    filepath_dd = os.path.join(temp, f'pseudo_gt_map/{mode}')
 
     seqs = [seq for seq in os.listdir(filepath_ri) if seq.find('sync') > -1]
     left_fold = 'proj_depth/image_02'

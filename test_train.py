@@ -35,10 +35,15 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-all_left_img,all_sparse,all_depth,all_pseudo,all_dense = lsn.dataloader(datapath)
+train_left_img,train_sparse,train_depth,train_pseudo,train_dense = lsn.dataloader(datapath, mode='train')
+val_left_img,val_sparse,val_depth,val_pseudo,val_dense = lsn.dataloader(datapath, mode='val')
 
 TrainImgLoader = torch.utils.data.DataLoader(
-        DA.myImageFloder(all_left_img,all_sparse,all_depth,all_pseudo,all_dense, True),
+        DA.myImageFloder(train_left_img,train_sparse,train_depth,train_pseudo,train_dense, True),
+        batch_size=args.batch_size , shuffle=True, num_workers=8, drop_last=True)
+
+ValImgLoader = torch.utils.data.DataLoader(
+        DA.myImageFloder(val_left_img,val_sparse,val_depth,val_pseudo,val_dense, True),
         batch_size=args.batch_size , shuffle=True, num_workers=8, drop_last=True)
 
 model = DenseLiDAR(args.batch_size)
@@ -67,8 +72,7 @@ def train(inputl,gt1,sparse,pseudo,dense,params):
         optimizer.zero_grad()
 
         dense_depth = model(inputl, sparse, pseudo, device)
-        print('sparse2')
-        print(sparse.shape)
+
         t_loss, s_loss, d_loss = total_loss(dense, gt1, dense_depth)
         t_loss.backward()
         optimizer.step()
@@ -97,6 +101,7 @@ def main():
 
     for epoch in range(1, args.epochs+1):
         total_train_loss = 0
+        total_val_loss = 0
 
          ## training ##
         for batch_idx, (imgL_crop,input_crop1,sparse2,pseudo_crop,dense_crop,params) in tqdm(enumerate(TrainImgLoader),total=len(TrainImgLoader), desc=f"Epoch {epoch}"): #rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
@@ -109,7 +114,7 @@ def main():
         print('epoch %d total training loss = %.10f' %(epoch, total_train_loss/len(TrainImgLoader)))
 
         ## validation ##
-        '''for batch_idx, (imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params) in tqdm(
+        for batch_idx, (imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params) in tqdm(
                 enumerate(ValImgLoader), total=len(ValImgLoader),
                 desc=f"Epoch {epoch}"):  # rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
             start_time = time.time()
@@ -119,7 +124,7 @@ def main():
             batch_idx, epoch, loss, loss1, loss2, time.time() - start_time))
             total_val_loss += loss
 
-        print('epoch %d total validation loss = %.10f' % (epoch, total_val_loss / len(ValImgLoader)))'''
+        print('epoch %d total validation loss = %.10f' % (epoch, total_val_loss / len(ValImgLoader)))
 
         #SAVE
         if epoch % 1 == 0:
