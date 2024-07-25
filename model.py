@@ -1,3 +1,4 @@
+import torch
 from torch.nn import Module
 from Submodules.DCU import depthCompletionNew_blockN
 from Submodules.data_rectification import rectify_depth
@@ -14,7 +15,7 @@ class DenseLiDAR(Module):
         normal2, concat2 = self.DCU(image, pseudo_depth_map, rectified_depth)
         
         residual = normal2 - sparse
-
+        residual = torch.clamp(residual, min=0)
         final_dense_depth = pseudo_depth_map + residual
 
         return final_dense_depth
