@@ -21,6 +21,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 parser = argparse.ArgumentParser(description='deepCpmpletion')
 parser.add_argument('--datapath', default='', help='datapath')
 parser.add_argument('--epochs', type=int, default=40, help='number of epochs to train')
+parser.add_argument('--checkpoint', type=int, default=5, help='number of epochs to making checkpoint')
 parser.add_argument('--batch_size', type=int, default=1, help='number of batch size to train')
 parser.add_argument('--gpu_nums', type=int, default=1, help='number of gpu to train')
 parser.add_argument('--loadmodel', default= '', help='load model')
@@ -57,6 +58,16 @@ para_optim = []
 
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-7, last_epoch=-1)
+
+def save_model(model, optimizer, epoch, path):
+    os.makedirs(os.path.dirname('checkpoint/'), exist_ok=True)
+
+    torch.save({
+        'epoch': epoch,
+        'model_state_dict': model,
+        'optimizer_state_dict': optimizer
+    }, path)
+    print(f'Checkpoint saved at: {path}\n')
 
 def train(inputl,gt1,sparse,pseudo,dense,params):
         device = 'cuda'
@@ -107,10 +118,8 @@ def main():
 
          ## training ##
         for batch_idx, (imgL_crop,input_crop1,sparse2,pseudo_crop,dense_crop,params) in tqdm(enumerate(TrainImgLoader),total=len(TrainImgLoader), desc=f"Epoch {epoch}"): #rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
-            start_time = time.time()
 
             loss,loss1,loss2 = train(imgL_crop,input_crop1,sparse2,pseudo_crop,dense_crop,params)
-            print('Iter %d / %d training loss = %.4f, Ploss = %.4f, n_loss = %.4f, time = %.2f' % (batch_idx, epoch, loss, loss1, loss2, time.time() - start_time))
             total_train_loss += loss
 
         print('epoch %d total training loss = %.10f' %(epoch, total_train_loss/len(TrainImgLoader)))
@@ -119,23 +128,15 @@ def main():
         for batch_idx, (imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params) in tqdm(
                 enumerate(ValImgLoader), total=len(ValImgLoader),
                 desc=f"Epoch {epoch}"):  # rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
-            start_time = time.time()
 
             loss, loss1, loss2 = validate(imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params)
-            print('Iter %d / %d validation loss = %.4f, Ploss = %.4f, n_loss = %.4f, time = %.2f' % (
-            batch_idx, epoch, loss, loss1, loss2, time.time() - start_time))
             total_val_loss += loss
 
         print('epoch %d total validation loss = %.10f' % (epoch, total_val_loss / len(ValImgLoader)))
 
-        #SAVE
-        if epoch % 1 == 0:
-            savefilename = args.savemodel + '.tar'
-            torch.save({
-	            'epoch': epoch,
-	            'state_dict': model.state_dict(),
-	            'train_loss': total_train_loss/len(TrainImgLoader),
-	        }, savefilename)
+        if epoch % args.checkpoint == 0:
+            save_path = f'checkpoint/epoch-{epoch}_loss-{total_val_loss/ len(ValImgLoader):.3f}.tar'
+            save_model(model.state_dict(), optimizer.state_dict(), epoch, save_path)
 
     print('full finetune time = %.2f HR' %((time.time() - start_full_time)/3600))
 

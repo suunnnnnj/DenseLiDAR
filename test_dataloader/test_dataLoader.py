@@ -96,6 +96,7 @@ def dataloader(filepath, mode='train'):
     depth_train = depths
     pseudo_train = pseudo
     dense_train = dense
+    print(mode)
     print(f"Total left images: {len(left_train)}")
     print(f"Total lidar images: {len(lidar2_train)}")
     print(f"Total depth images: {len(depth_train)}")
