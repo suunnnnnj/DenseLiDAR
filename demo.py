@@ -1,127 +1,130 @@
+from __future__ import print_function
+import argparse
+import os
 import torch
-from torch import nn
+import torch.nn as nn
+import torch.nn.parallel
+import torch.utils.data
 import torchvision.transforms as transforms
-import cv2
+from torch.autograd import Variable
+import torch.nn.functional as F
+import skimage
+import skimage.io
+import skimage.transform
 import numpy as np
-import png
-from Submodules.DCU import depthCompletionNew_blockN
-from Submodules.data_rectification import rectify_depth
+from model import DenseLiDAR
+from PIL import Image
 
-from Submodules.utils.visualization import *
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-class DenseLiDAR(nn.Module):
-    def __init__(self, bs, model_path=None):
-        super().__init__()
-        self.bs = bs
-        self.rectification = rectify_depth
-        self.DCU = depthCompletionNew_blockN(bs)
+parser = argparse.ArgumentParser(description='deepCompletion')
+parser.add_argument('--loadmodel', default='',
+                    help='load model')
+parser.add_argument('--no-cuda', action='store_true', default=False,
+                    help='enables CUDA training')
+parser.add_argument('--seed', type=int, default=1, metavar='S',
+                    help='random seed (default: 1)')
+args = parser.parse_args()
+args.cuda = not args.no_cuda and torch.cuda.is_available()
 
-        # Load pretrained model weights
-        if model_path is not None:
-            checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
-            print("Checkpoint keys:", checkpoint.keys())  # Check the structure of the checkpoint
+torch.manual_seed(args.seed)
+if args.cuda:
+    torch.cuda.manual_seed(args.seed)
 
-            # Check if 'model_state_dict' directly exists in checkpoint or inside another key
-            if 'model_state_dict' in checkpoint:
-                state_dict = checkpoint['model_state_dict']
-            else:
-                state_dict = checkpoint
+model = DenseLiDAR(1)
+# model = nn.DataParallel(model, device_ids=[0])
+model.cuda()
 
-            # Remove unnecessary keys
-            state_dict = {k.replace('DCU.', ''): v for k, v in state_dict.items() if k.startswith('DCU.')}
+modelpath = os.path.join(ROOT_DIR, args.loadmodel)
 
-            # Load the state_dict into the model
-            self.DCU.load_state_dict(state_dict, strict=False)  # Set strict=False to ignore unmatched keys
+if modelpath is not None:
+    checkpoint = torch.load(modelpath, map_location=torch.device('cpu'))
+    print("Checkpoint keys:", checkpoint.keys())  # Check the structure of the checkpoint
 
-            print(f"Loaded pretrained model weights from {model_path}.")
+    # Check if 'model_state_dict' directly exists in checkpoint or inside another key
+    if 'model_state_dict' in checkpoint:
+        state_dict = checkpoint['model_state_dict']
+    else:
+        state_dict = checkpoint
 
-    def forward(self, image, sparse, pseudo_depth_map, device):
-        rectified_depth = self.rectification(sparse, pseudo_depth_map)
-        normal2, concat2 = self.DCU(image, pseudo_depth_map, rectified_depth)
+    # Remove unnecessary keys
+    state_dict = {k.replace('DCU.', ''): v for k, v in state_dict.items() if k.startswith('DCU.')}
 
-        residual = normal2 - sparse
+    # Load the state_dict into the model
+    model.load_state_dict(state_dict, strict=False)  # Set strict=False to ignore unmatched keys
 
-        final_dense_depth = pseudo_depth_map + residual
+    print(f"Loaded pretrained model weights from {modelpath}.")
 
-        return final_dense_depth
-    
-def normalize_non_zero_pixels(pixels):
-    non_zero_mask = (pixels != 0)
-    non_zero_pixels = pixels[non_zero_mask]
 
-    if non_zero_pixels.size == 0:  # If all pixels are zero
-        return pixels.astype(np.float32)
-    
-    normalized_pixels = (non_zero_pixels - np.min(non_zero_pixels)) / (np.max(non_zero_pixels) - np.min(non_zero_pixels))
-    
-    result = np.zeros_like(pixels, dtype=np.float32)
-    result[non_zero_mask] = normalized_pixels
+def test(imgL,sparse,pseudo_depth):
+        model.eval()
 
-    return result
+        if args.cuda:
+           imgL = torch.FloatTensor(imgL).cuda()
+           sparse = torch.FloatTensor(sparse).cuda()
+           pseudo_depth = torch.FloatTensor(pseudo_depth).cuda()
 
-def save_depth_as_png(dense_depth, output_path):
-    with open(output_path, 'wb') as f:
-        depth_image = (dense_depth * 256).astype(np.uint16)
+        imgL= Variable(imgL)
+        sparse = Variable(sparse)
+        pseudo_depth = Variable(pseudo_depth)
 
-        writer = png.Writer(width=depth_image.shape[1],
-                            height=depth_image.shape[0],
-                            bitdepth=16,
-                            greyscale=True)
-        writer.write(f, depth_image)
+        device = "cuda"
+        with torch.no_grad():
+            dense_depth = model(imgL, sparse, pseudo_depth, device)
 
-# Paths
-image_path = "demo_image.png"
-sparse_depth_path = "demo_velodyne.png"
-pseudo_depth_path = "demo_pseudo_depth.png"
-model_path = "sample_model.tar"  # pretrained model path
-output_path = "dense_depth_output.png"
+        dense_depth = torch.squeeze(dense_depth)
 
-resize_shape = (512, 256)
+        return dense_depth.data.cpu().numpy()
 
-try:
-    # Load the image, sparse depth map, pseudo_depth_image
-    image = cv2.imread(image_path)
-    sparse_depth_image = cv2.imread(sparse_depth_path, cv2.IMREAD_ANYDEPTH)
-    pseudo_depth_image = cv2.imread(pseudo_depth_path, cv2.IMREAD_ANYDEPTH)
-    
-    # Preprocess the inputs
-    image = cv2.resize(image, resize_shape, interpolation=cv2.INTER_CUBIC)
-    sparse_depth_image = cv2.resize(sparse_depth_image, resize_shape, interpolation=cv2.INTER_CUBIC)
-    pseudo_depth_image = cv2.resize(pseudo_depth_image, resize_shape, interpolation=cv2.INTER_CUBIC)
+def scale_crop():
+    t_list = [
+        transforms.ToTensor()
+    ]
 
-    image = image / 256.0
-    sparse_depth_image = sparse_depth_image / 256.0
-    pseudo_depth_image = pseudo_depth_image / 256.0
+    return transforms.Compose(t_list)
 
-    image = normalize_non_zero_pixels(image)
-    sparse_depth_image = normalize_non_zero_pixels(sparse_depth_image)
-    pseudo_depth_image = normalize_non_zero_pixels(pseudo_depth_image)
+def get_transform():
+    return scale_crop()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def main():
+   processed = get_transform()
 
-    transform = transforms.Compose([
-        transforms.ToTensor()  # Converts the image to tensor
-    ])
-    
-    image_tensor = transform(image).unsqueeze(0).to(device)
-    sparse_depth_tensor = transform(sparse_depth_image).unsqueeze(0).to(device)
-    pseudo_depth_tensor = transform(pseudo_depth_image).unsqueeze(0).to(device)
+   pseudo_depth_fold = 'demo_pseudo_depth.png'
+   left_fold = 'demo_image.png'
+   lidar2_raw ='demo_velodyne.png'
+   
+   imgL_o = skimage.io.imread(left_fold)
+   imgL_o = np.reshape(imgL_o, [imgL_o.shape[0], imgL_o.shape[1],3])
+   imgL = processed(imgL_o).numpy()
+   imgL = np.reshape(imgL, [1, 3, imgL_o.shape[0], imgL_o.shape[1]])
 
-    # Initialize and run the model
-    model = DenseLiDAR(bs=image_tensor.size(0), model_path=model_path)
-    model.to(device)
-    model.eval()
-    with torch.no_grad():
-        dense_depth = model(image_tensor, sparse_depth_tensor, pseudo_depth_tensor, device)
+   p_depth = skimage.io.imread(pseudo_depth_fold).astype(np.float32)
+   p_depth = p_depth * 1.0 / 256.0
+   p_depth = np.reshape(p_depth, [imgL_o.shape[0], imgL_o.shape[1], 1])
+   p_depth = processed(p_depth).numpy()
+   p_depth = np.reshape(p_depth, [1, 1, imgL_o.shape[0], imgL_o.shape[1]])
 
-        visualize_1("final dense depth", dense_depth)
+   sparse = skimage.io.imread(lidar2_raw).astype(np.float32)
+   sparse = sparse *1.0 / 256.0
+   sparse = np.reshape(sparse, [imgL_o.shape[0], imgL_o.shape[1], 1])
+   sparse = processed(sparse).numpy()
+   sparse = np.reshape(sparse, [1, 1, imgL_o.shape[0], imgL_o.shape[1]])
 
-    # Postprocess and save the results as PNG
-    dense_depth_np = dense_depth.squeeze().cpu().numpy()
+   output1 = "dense_depth_output.png"
 
-    save_depth_as_png(dense_depth_np, output_path)
-    print(f"Dense depth map saved to {output_path}")
+   pred = test(imgL, sparse, p_depth)
+   pred = np.where(pred <= 0.0, 0.9, pred)
 
-except Exception as e:
-    print(f"An error occurred: {e}")
+   pred_show = pred * 256.0
+   pred_show = pred_show.astype('uint16')
+   res_buffer = pred_show.tobytes()
+   img = Image.new("I",pred_show.T.shape)
+   img.frombytes(res_buffer,'raw',"I;16")
+   img.save(output1)
+
+if __name__ == '__main__':
+   main()
+
+
+
 
