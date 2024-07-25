@@ -49,14 +49,14 @@ def dataloader(filepath, mode='train'):
         pseudo_gt = get_file_path(filepath_pg, seq) # pseudo GT map
 
     print(mode)
-    print(f"image: {len(images)} | lidar : {len(lidars)} | gt depth: {len(gt)} | pseudo depth: {len(pseudo)} | pseudo GT: {len(pseudo_gt)}\n")
+    print(f"image: {len(images)} | lidar : {len(lidars)} | gt depth: {len(gt)} | pseudo depth: {len(pseudo)} | pseudo GT: {len(pseudo_gt)}")
 
     if mode == 'val':
-        print("Data loading complete.")
+        print("Data loading complete.\n")
 
     return images, lidars, gt, pseudo, pseudo_gt
 
 if __name__ == '__main__':
     datapath = ''
     images, lidars, gt, pseudo, pseudo_gt = dataloader(datapath)
-    print("Data loading complete.")
+    print("Data loading complete.\n")
