@@ -42,6 +42,7 @@ def cleanup():
     dist.destroy_process_group()
 
 def main_worker(rank, world_size, args):
+    batch_size = int(args.batch_size / args.gpu_nums)
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(args.seed)
     if args.cuda:
@@ -68,23 +69,25 @@ def main_worker(rank, world_size, args):
 
     TrainImgLoader = torch.utils.data.DataLoader(
         DA.myImageFloder(train_left_img, train_sparse, train_depth, train_pseudo, train_dense, True),
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         shuffle=False,
         num_workers=8,
         pin_memory=True,
-        sampler=train_sampler
+        sampler=train_sampler,
+        drop_last=True
     )
 
     ValImgLoader = torch.utils.data.DataLoader(
         DA.myImageFloder(val_left_img, val_sparse, val_depth, val_pseudo, val_dense, True),
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         shuffle=False,
         num_workers=8,
         pin_memory=True,
-        sampler=val_sampler
+        sampler=val_sampler,
+        drop_last=True
     )
 
-    model = DenseLiDAR(args.batch_size).to(rank)
+    model = DenseLiDAR(batch_size).to(rank)
     model = DDP(model, device_ids=[rank])
 
     optimizer = optim.Adam(model.parameters(), lr=0.001)
