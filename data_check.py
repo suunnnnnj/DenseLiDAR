@@ -12,6 +12,8 @@ def count_files_in_folder(folder_path):
 
     print(f"Number of files in '{folder_path}': {file_count}")
 
+    return file_count
+
 
 root_dir = '/home/research1/Desktop/gachon/SSDC/datasets/'
 lidar_dir = 'data_depth_velodyne/train'
@@ -31,6 +33,7 @@ for sync in lidar_list:
     for pos in left_right:
         lidar_path = os.path.join(sync_pathl, pos)
         image_path = os.path.join(sync_pathi, pos)
-        count_files_in_folder(lidar_path)  
-        count_files_in_folder(image_path)
-        print()  
+        lidar_count = count_files_in_folder(lidar_path)  
+        image_count = count_files_in_folder(image_path)
+        if lidar_count != image_count:
+            print("doesn't match these files")
