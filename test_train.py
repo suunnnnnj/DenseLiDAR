@@ -14,6 +14,7 @@ from test_dataloader import test_dataLoader as lsn
 from test_dataloader import test_trainLoader as DA
 from model import DenseLiDAR
 from Submodules.loss.total_loss import total_loss
+from tqdm import tqdm
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -81,7 +82,7 @@ def main():
         total_train_loss = 0
 
          ## training ##
-        for batch_idx, (imgL_crop,input_crop1,sparse2,pseudo_crop,dense_crop,params) in enumerate(TrainImgLoader): #rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
+        for batch_idx, (imgL_crop,input_crop1,sparse2,pseudo_crop,dense_crop,params) in tqdm(enumerate(TrainImgLoader),total=len(TrainImgLoader), desc=f"Epoch {epoch}"): #rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
             start_time = time.time()
 
             loss,loss1,loss2 = train(imgL_crop,input_crop1,sparse2,pseudo_crop,dense_crop,params)

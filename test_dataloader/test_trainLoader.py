@@ -54,17 +54,10 @@ def default_loader(path):
     return img
 
 def point_loader(path):
-    try:
-        img = skimage.io.imread(path)
-        print(f"Loaded image shape: {img.shape} from path: {path}")
-        depth = img * 1.0 / 256.0
-        print(f"Depth shape before reshape: {depth.shape}, size: {depth.size}")
-        depth = np.reshape(depth, [img.shape[0], img.shape[1], 1]).astype(np.float32)
-        print(f"Depth shape after reshape: {depth.shape}")
-        return depth
-    except Exception as e:
-        print(f"Error loading or reshaping image from path: {path}, Error: {e}")
-        raise
+    img = skimage.io.imread(path)
+    depth = img *1.0 / 256.0
+    depth = np.reshape(depth, [img.shape[0], img.shape[1], 1]).astype(np.float32)
+    return depth
 
 class myImageFloder(data.Dataset):
     def __init__(self, left,sparse,gtp,p_depth,gt_depth,training,   #raw image, raw lidar, gt lidar, pseudo depth, gt depth
