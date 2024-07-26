@@ -28,6 +28,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False, help='enabl
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 parser.add_argument('--master_addr', type=str, default='localhost', help='master address for distributed training')
 parser.add_argument('--master_port', type=str, default='12355', help='master port for distributed training')
+parser.add_argument('--patience', type=int, default=10, help='early stopping patience')
 args = parser.parse_args()
 
 def setup(rank, world_size, master_addr, master_port):
@@ -35,47 +36,34 @@ def setup(rank, world_size, master_addr, master_port):
     os.environ['MASTER_PORT'] = master_port
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
-
 def cleanup():
     dist.destroy_process_group()
 
-
 def save_model(model, optimizer, epoch, path, rank):
     os.makedirs(os.path.dirname('checkpoint/'), exist_ok=True)
-
     if rank == 0:
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
         }, path)
-
         print(f'Checkpoint saved at: {path}\n')
-
 
 def train(image, gt, sparse, pseudo_depth_map, pseudo_gt_map, model, optimizer, device, args):
     model.train()
-
     image = Variable(torch.FloatTensor(image))
     gt = Variable(torch.FloatTensor(gt))
     sparse = Variable(torch.FloatTensor(sparse))
     pseudo_depth_map = Variable(torch.FloatTensor(pseudo_depth_map))
     pseudo_gt_map = Variable(torch.FloatTensor(pseudo_gt_map))
-
     if args.cuda:
         image, gt, sparse, pseudo_depth_map, pseudo_gt_map = image.cuda(), gt.cuda(), sparse.cuda(), pseudo_depth_map.cuda(), pseudo_gt_map.cuda()
-
     optimizer.zero_grad()
-
     dense_depth = model(image, sparse, pseudo_depth_map, device)
-
     t_loss, s_loss, d_loss = total_loss(pseudo_gt_map, gt, dense_depth)
     t_loss.backward()
-
     optimizer.step()
-
     return t_loss, s_loss, d_loss
-
 
 def validate(image, gt, sparse, pseudo_depth_map, pseudo_gt_map, model, device, args):
     model.eval()
@@ -85,43 +73,32 @@ def validate(image, gt, sparse, pseudo_depth_map, pseudo_gt_map, model, device, 
         sparse = Variable(torch.FloatTensor(sparse))
         pseudo_depth_map = Variable(torch.FloatTensor(pseudo_depth_map))
         pseudo_gt_map = Variable(torch.FloatTensor(pseudo_gt_map))
-
         if args.cuda:
             image, gt, sparse, pseudo_depth_map, pseudo_gt_map = image.cuda(), gt.cuda(), sparse.cuda(), pseudo_depth_map.cuda(), pseudo_gt_map.cuda()
-
         dense_depth = model(image, sparse, pseudo_depth_map, device)
-
         t_loss, s_loss, d_loss = total_loss(pseudo_gt_map, gt, dense_depth)
-
     return t_loss, s_loss, d_loss
-
 
 def main_worker(rank, world_size, args):
     batch_size = int(args.batch_size / args.gpu_nums)
     args.cuda = not args.no_cuda and torch.cuda.is_available()
-
     torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
-
     setup(rank, world_size, args.master_addr, args.master_port)
     torch.cuda.set_device(rank)
-
     train_image, train_sparse, train_gt, train_pseudo_depth_map, train_pseudo_gt_map = lsn.dataloader(args.data_path, mode='train')
     val_image, val_sparse, val_gt, val_pseudo_depth_map, val_pseudo_gt_map = lsn.dataloader(args.data_path, mode='val')
-
     train_sampler = torch.utils.data.distributed.DistributedSampler(
         DA.myImageFloder(train_image, train_sparse, train_gt, train_pseudo_depth_map, train_pseudo_gt_map, True),
         num_replicas=world_size,
         rank=rank
     )
-
     val_sampler = torch.utils.data.distributed.DistributedSampler(
         DA.myImageFloder(val_image, val_sparse, val_gt, val_pseudo_depth_map, val_pseudo_gt_map, True),
         num_replicas=world_size,
         rank=rank
     )
-
     TrainImgLoader = torch.utils.data.DataLoader(
         DA.myImageFloder(train_image, train_sparse, train_gt, train_pseudo_depth_map, train_pseudo_gt_map, True),
         batch_size=batch_size,
@@ -131,7 +108,6 @@ def main_worker(rank, world_size, args):
         sampler=train_sampler,
         drop_last=True
     )
-
     ValImgLoader = torch.utils.data.DataLoader(
         DA.myImageFloder(val_image, val_sparse, val_gt, val_pseudo_depth_map, val_pseudo_gt_map, True),
         batch_size=batch_size,
@@ -141,28 +117,24 @@ def main_worker(rank, world_size, args):
         sampler=val_sampler,
         drop_last=True
     )
-
     model = DenseLiDAR(batch_size).to(rank)
     model = DDP(model, device_ids=[rank])
-
     optimizer = AdamW(model.parameters(), lr=0.001, weight_decay=1e-2)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-7, last_epoch=-1)
-
     torch.cuda.empty_cache()
-
     start_full_time = time.time()
+    best_val_loss = float('inf')  # Initialize best validation loss to infinity
+    best_model_path = None  # Variable to store the path of the best model
+    epochs_no_improve = 0  # Counter for epochs with no improvement
 
     for epoch in range(1, args.epochs + 1):
         total_train_loss = 0
         total_train_s_loss = 0
         total_train_d_loss = 0
-
         total_val_loss = 0
         total_val_s_loss = 0
-        total_val_d_loss =0
-
+        total_val_d_loss = 0
         TrainImgLoader.sampler.set_epoch(epoch)
-
         ## training ##
         print("[Training]")
         for batch_idx, (image, gt, sparse, pseudo_depth_map, pseudo_gt_map) in tqdm(
@@ -171,11 +143,10 @@ def main_worker(rank, world_size, args):
             total_train_loss += train_loss
             total_train_s_loss += train_s_loss
             total_train_d_loss += train_d_loss
-
+            
         print('epoch %d total training loss = %.10f' % (epoch, total_train_loss / len(TrainImgLoader)))
         print('epoch %d structural training loss = %.10f, depth training loss = %.10f' % (epoch, total_train_s_loss / len(TrainImgLoader), total_train_d_loss / len(TrainImgLoader)))
         print()
-
         ## validation ##
         print("[Validation]")
         for batch_idx, (image, gt, sparse, pseudo_depth_map, pseudo_gt_map) in tqdm(
@@ -184,20 +155,34 @@ def main_worker(rank, world_size, args):
             total_val_loss += val_loss
             total_val_s_loss += val_s_loss
             total_val_d_loss += val_d_loss
-
-        print('epoch %d total validation loss = %.10f' % (epoch, total_val_loss / len(ValImgLoader)))
+        avg_val_loss = total_val_loss / len(ValImgLoader)
+        print('epoch %d total validation loss = %.10f' % (epoch, avg_val_loss))
         print('epoch %d structural validation loss = %.10f, depth validation loss = %.10f' % (epoch, total_val_s_loss / len(ValImgLoader), total_val_d_loss / len(ValImgLoader)))
         print()
-
+        
         scheduler.step()
 
+        # Check if the current model is the best based on validation loss
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            best_model_path = f'checkpoint/best_model_epoch-{epoch}_loss-{avg_val_loss:.3f}.tar'
+            save_model(model, optimizer, epoch, best_model_path, rank)
+            print(f'Best model updated with validation loss: {avg_val_loss:.10f}')
+            epochs_no_improve = 0  # Reset the counter when improvement is seen
+        else:
+            epochs_no_improve += 1
+
+        if epochs_no_improve >= args.patience:
+            print(f'Early stopping triggered after {epochs_no_improve} epochs with no improvement.')
+            break
+
         if epoch % args.checkpoint == 0 and rank == 0:
-            save_path = f'checkpoint/epoch-{epoch}_loss-{total_val_loss / len(ValImgLoader):.3f}.tar'
+            save_path = f'checkpoint/epoch-{epoch}_loss-{avg_val_loss:.3f}.tar'
             save_model(model, optimizer, epoch, save_path, rank)
-
     print('full finetune time = %.2f HR' % ((time.time() - start_full_time) / 3600))
+    if best_model_path:
+        print(f'The best model is saved at: {best_model_path}')
     cleanup()
-
 
 if __name__ == '__main__':
     world_size = args.gpu_nums
