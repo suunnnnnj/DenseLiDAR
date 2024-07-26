@@ -16,6 +16,7 @@ from model import DenseLiDAR
 from Submodules.loss.total_loss import total_loss
 from tqdm import tqdm
 import torch.multiprocessing as mp
+from torch.optim import AdamW
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -90,8 +91,8 @@ def main_worker(rank, world_size, args):
     model = DenseLiDAR(batch_size).to(rank)
     model = DDP(model, device_ids=[rank])
 
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-7, last_epoch=-1)
+    optimizer = AdamW(model.parameters(), lr=0.001, weight_decay=1e-2)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-7, last_epoch=-1)
 
     def save_model(model, optimizer, epoch, path):
         os.makedirs(os.path.dirname('checkpoint/'), exist_ok=True)
@@ -103,7 +104,7 @@ def main_worker(rank, world_size, args):
             }, path)
             print(f'Checkpoint saved at: {path}\n')
 
-    def train(inputl, gt1, sparse, pseudo, dense, params):
+    def train(inputl, gt1, sparse, pseudo, dense):
         device = 'cuda'
         model.train()
         inputl = Variable(torch.FloatTensor(inputl))
@@ -111,9 +112,8 @@ def main_worker(rank, world_size, args):
         sparse = Variable(torch.FloatTensor(sparse))
         pseudo = Variable(torch.FloatTensor(pseudo))
         dense = Variable(torch.FloatTensor(dense))
-        params = Variable(torch.FloatTensor(params))
         if args.cuda:
-            inputl, gt1, sparse, pseudo, dense, params = inputl.cuda(), gt1.cuda(), sparse.cuda(), pseudo.cuda(), dense.cuda(), params.cuda()
+            inputl, gt1, sparse, pseudo, dense = inputl.cuda(), gt1.cuda(), sparse.cuda(), pseudo.cuda(), dense.cuda()
         optimizer.zero_grad()
 
         dense_depth = model(inputl, sparse, pseudo, device)
@@ -124,7 +124,7 @@ def main_worker(rank, world_size, args):
 
         return t_loss, s_loss, d_loss
 
-    def validate(inputl, gt1, sparse, pseudo, dense, params):
+    def validate(inputl, gt1, sparse, pseudo, dense):
         device = 'cuda'
         model.eval()
         with torch.no_grad():
@@ -133,9 +133,8 @@ def main_worker(rank, world_size, args):
             sparse = Variable(torch.FloatTensor(sparse))
             pseudo = Variable(torch.FloatTensor(pseudo))
             dense = Variable(torch.FloatTensor(dense))
-            params = Variable(torch.FloatTensor(params))
             if args.cuda:
-                inputl, gt1, sparse, pseudo, dense, params = inputl.cuda(), gt1.cuda(), sparse.cuda(), pseudo.cuda(), dense.cuda(), params.cuda()
+                inputl, gt1, sparse, pseudo, dense= inputl.cuda(), gt1.cuda(), sparse.cuda(), pseudo.cuda(), dense.cuda()
 
             dense_depth = model(inputl, sparse, pseudo, device)
             t_loss, s_loss, d_loss = total_loss(dense, gt1, dense_depth)
@@ -152,20 +151,21 @@ def main_worker(rank, world_size, args):
         TrainImgLoader.sampler.set_epoch(epoch)
 
         ## training ##
-        for batch_idx, (imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params) in tqdm(
+        for batch_idx, (imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop) in tqdm(
                 enumerate(TrainImgLoader), total=len(TrainImgLoader), desc=f"Epoch {epoch}"):  # rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
 
-            loss, loss1, loss2 = train(imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params)
+            loss, loss1, loss2 = train(imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop)
             total_train_loss += loss
 
         print('epoch %d total training loss = %.10f' % (epoch, total_train_loss / len(TrainImgLoader)))
+        print('epoch %d structural training loss = %.10f, depth training loss = %.10f' % (epoch, loss1, loss2))
 
         ## validation ##
-        for batch_idx, (imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params) in tqdm(
+        for batch_idx, (imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop) in tqdm(
                 enumerate(ValImgLoader), total=len(ValImgLoader),
                 desc=f"Epoch {epoch}"):  # rawimage, gtlidar,rawlidar,pseudo_depth,gt_depth,param
 
-            loss, loss1, loss2 = validate(imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop, params)
+            loss, loss1, loss2 = validate(imgL_crop, input_crop1, sparse2, pseudo_crop, dense_crop)
             total_val_loss += loss
 
         print('epoch %d total validation loss = %.10f' % (epoch, total_val_loss / len(ValImgLoader)))

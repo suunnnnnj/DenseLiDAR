@@ -5,7 +5,6 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import skimage
 import skimage.io
-import skimage.transform
 import numpy as np
 import torchvision.transforms as transforms
 
