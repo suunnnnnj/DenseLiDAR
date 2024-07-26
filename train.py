@@ -144,8 +144,8 @@ def main_worker(rank, world_size, args):
             total_train_s_loss += train_s_loss
             total_train_d_loss += train_d_loss
             
-        print('epoch %d total training loss = %.10f' % (epoch, total_train_loss / len(TrainImgLoader)))
-        print('epoch %d structural training loss = %.10f, depth training loss = %.10f' % (epoch, total_train_s_loss / len(TrainImgLoader), total_train_d_loss / len(TrainImgLoader)))
+        print('Epoch %d total training loss = %.10f' % (epoch, total_train_loss / len(TrainImgLoader)))
+        print('Epoch %d structural training loss = %.10f, depth training loss = %.10f' % (epoch, total_train_s_loss / len(TrainImgLoader), total_train_d_loss / len(TrainImgLoader)))
         print()
         ## validation ##
         print("[Validation]")
@@ -156,8 +156,8 @@ def main_worker(rank, world_size, args):
             total_val_s_loss += val_s_loss
             total_val_d_loss += val_d_loss
         avg_val_loss = total_val_loss / len(ValImgLoader)
-        print('epoch %d total validation loss = %.10f' % (epoch, avg_val_loss))
-        print('epoch %d structural validation loss = %.10f, depth validation loss = %.10f' % (epoch, total_val_s_loss / len(ValImgLoader), total_val_d_loss / len(ValImgLoader)))
+        print('Epoch %d total validation loss = %.10f' % (epoch, avg_val_loss))
+        print('Epoch %d structural validation loss = %.10f, depth validation loss = %.10f' % (epoch, total_val_s_loss / len(ValImgLoader), total_val_d_loss / len(ValImgLoader)))
         print()
         
         scheduler.step()
@@ -181,7 +181,7 @@ def main_worker(rank, world_size, args):
             save_model(model, optimizer, epoch, save_path, rank)
     print('full finetune time = %.2f HR' % ((time.time() - start_full_time) / 3600))
     if best_model_path:
-        print(f'The best model is saved at: {best_model_path}')
+        print(f'The best model is saved at: {best_model_path}\n')
     cleanup()
 
 if __name__ == '__main__':
