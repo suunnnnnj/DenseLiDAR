@@ -4,37 +4,7 @@ import torch.utils.data
 import torch.nn as nn
 import math
 from Submodules.utils.utils_dcu import *
-import matplotlib.pyplot as plt
-import numpy as np
-
-def visualize_tensor(tensor, title="Tensor Visualization", num_channels_to_display=3):
-    tensor = tensor.detach().cpu().numpy()
-    
-    if tensor.ndim == 4:  # Batch, Channels, Height, Width
-        tensor = tensor[0]  # Select the first sample in the batch
-    
-    num_channels = tensor.shape[0]
-    
-    if num_channels == 1:  # Single-channel image
-        tensor = tensor[0]  # Remove channel dimension
-        plt.imshow(tensor, cmap='gray')
-        plt.title(f"{title} (channel 1)")
-        plt.axis('off')
-        plt.show()
-    elif num_channels == 3:  # RGB image
-        tensor = np.transpose(tensor, (1, 2, 0))  # Rearrange dimensions to Height, Width, Channels
-        plt.imshow(tensor)
-        plt.title(title)
-        plt.axis('off')
-        plt.show()
-    else:
-        # Display the first few channels as separate images
-        fig, axes = plt.subplots(1, num_channels_to_display, figsize=(15, 5))
-        for i in range(min(num_channels, num_channels_to_display)):
-            axes[i].imshow(tensor[i], cmap='gray')
-            axes[i].set_title(f"{title} (channel {i + 1})")
-            axes[i].axis('off')
-        plt.show()
+from Submodules.utils.visualization import visualize_tensor
 
 class UpProject(nn.Module):
 
@@ -202,51 +172,49 @@ class depthCompletionNew_blockN(nn.Module):
         out_conv6 = self.conv6_1(self.conv6(out_conv5))+inputS_conv4
 
         out6 = self.predict_normal6(out_conv6)
-        visualize_tensor(out6, "out6")
-        # out6(1,256,32,64)
         normal6_up = self.upsampled_normal6_to_5(out6)
-        visualize_tensor(normal6_up, "normal6_up")
+        #visualize_tensor(normal6_up, "normal6_up")
         # normal6_up(1,1,32,64)
         out_deconv5 = self.deconv5(out_conv6)
         # out_deconv5(1,256,32,64)
 
         concat5 = adaptative_cat(out_conv5, out_deconv5, normal6_up)+inputS_conv3
-        visualize_tensor(concat5, "concat5")
+        #visualize_tensor(concat5, "concat5")
         # concat5(1,513,32,64)
         out5 = self.predict_normal5(concat5)
-        visualize_tensor(out5, "out5")
+        #visualize_tensor(out5, "out5")
         # out5(1,1,32,64)
         normal5_up = self.upsampled_normal5_to_4(out5)
         # normal5_up(1,1,64,128)
         out_deconv4 = self.deconv4(concat5)
         # out_deconv5(1,128,64,128)
         concat4 = adaptative_cat(out_conv4, out_deconv4, normal5_up)+inputS_conv2
-        visualize_tensor(concat4, "concat4")
+        #visualize_tensor(concat4, "concat4")
         # concat5(1,385,64,128). out_conv5(1,256,64,128). normal5_up(1,1,64,128)
         out4 = self.predict_normal4(concat4)
-        visualize_tensor(out4, "out4")
+        #visualize_tensor(out4, "out4")
         normal4_up = self.upsampled_normal4_to_3(out4)
-        visualize_tensor(normal4_up, "normal4_up")
+        #visualize_tensor(normal4_up, "normal4_up")
         out_deconv3 = self.deconv3(concat4)
 
         concat3 = adaptative_cat(out_conv3, out_deconv3, normal4_up)+inputS_conv1
-        visualize_tensor(concat3, "concat3")
+        #visualize_tensor(concat3, "concat3")
         out3 = self.predict_normal3(concat3)
-        visualize_tensor(out3, "out3")
+        #visualize_tensor(out3, "out3")
 
         normal3_up = self.upsampled_normal3_to_2(out3)
-        visualize_tensor(normal3_up, "normal3_up")
+        #visualize_tensor(normal3_up, "normal3_up")
         out_deconv2 = self.deconv2(concat3)
 
         concat2 = adaptative_cat(out_conv2, out_deconv2, normal3_up)+inputS_conv0
-        visualize_tensor(concat2, "concat2")
+        #visualize_tensor(concat2, "concat2")
         # concat2(1,97,256,512)
         out2 = self.predict_normal2(concat2)
-        visualize_tensor(out2, "out2")
+        #visualize_tensor(out2, "out2")
         # out2(1,2,256,512)
         normal2 = out2
         normal2 = normal2[:,1,:,:]
         normal2 = normal2.unsqueeze(1)
-        visualize_tensor(normal2, "normal2")
+        #visualize_tensor(normal2,"normal2")
 
         return normal2, concat2
