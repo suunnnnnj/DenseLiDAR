@@ -1,6 +1,7 @@
 import PIL
 import matplotlib.pyplot as plt
 from torchvision.transforms import transforms
+import numpy as np
 
 def set_image(img):
     if isinstance(img, PIL.Image.Image):
@@ -33,3 +34,32 @@ def visualize_2(title, title1, title2, img1, img2):
     plt.title(title2)
     plt.imshow(img2, 'gray')
     plt.show()
+
+def visualize_tensor(tensor, title="Tensor Visualization", num_channels_to_display=3):
+    tensor = tensor.detach().cpu().numpy()
+    
+    if tensor.ndim == 4:  # Batch, Channels, Height, Width
+        tensor = tensor[0]  # Select the first sample in the batch
+    
+    num_channels = tensor.shape[0]
+    
+    if num_channels == 1:  # Single-channel image
+        tensor = tensor[0]  # Remove channel dimension
+        plt.imshow(tensor, cmap='gray')
+        plt.title(f"{title} (channel 1)")
+        plt.axis('off')
+        plt.show()
+    elif num_channels == 3:  # RGB image
+        tensor = np.transpose(tensor, (1, 2, 0))  # Rearrange dimensions to Height, Width, Channels
+        plt.imshow(tensor)
+        plt.title(title)
+        plt.axis('off')
+        plt.show()
+    else:
+        # Display the first few channels as separate images
+        fig, axes = plt.subplots(1, num_channels_to_display, figsize=(15, 5))
+        for i in range(min(num_channels, num_channels_to_display)):
+            axes[i].imshow(tensor[i], cmap='gray')
+            axes[i].set_title(f"{title} (channel {i + 1})")
+            axes[i].axis('off')
+        plt.show()
