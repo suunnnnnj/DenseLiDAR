@@ -11,11 +11,6 @@ import torchvision.transforms as transforms
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Preprocess
-IMG_EXTENSIONS = [
-    '.jpg', '.JPG', '.jpeg', '.JPEG',
-    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP',
-]
 INSTICS = {"2011_09_26": [721.5377, 596.5593, 149.854],
            "2011_09_28": [707.0493, 604.0814, 162.5066],
            "2011_09_29": [718.3351, 600.3891, 159.5122],
@@ -40,9 +35,6 @@ def get_transform(name='imagenet', input_size=None,
     input_size = 256
     return scale_crop(input_size=input_size,
                               scale_size=scale_size, normalize=normalize)
-
-def is_image_file(filename):
-    return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
 def default_loader(path):
     img = skimage.io.imread(path)
