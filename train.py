@@ -76,6 +76,7 @@ def train(image, gt, sparse, pseudo_depth_map, pseudo_gt_map, model, optimizer, 
 
     return t_loss, s_loss, d_loss
 
+
 def validate(image, gt, sparse, pseudo_depth_map, pseudo_gt_map, model, device, args):
     model.eval()
     with torch.no_grad():
@@ -93,6 +94,7 @@ def validate(image, gt, sparse, pseudo_depth_map, pseudo_gt_map, model, device, 
         t_loss, s_loss, d_loss = total_loss(pseudo_gt_map, gt, dense_depth)
 
     return t_loss, s_loss, d_loss
+
 
 def main_worker(rank, world_size, args):
     batch_size = int(args.batch_size / args.gpu_nums)
