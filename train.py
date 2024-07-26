@@ -119,6 +119,7 @@ def main_worker(rank, world_size, args):
     )
     model = DenseLiDAR(batch_size).to(rank)
     model = DDP(model, device_ids=[rank])
+
     optimizer = AdamW(model.parameters(), lr=0.001, weight_decay=1e-2)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-7, last_epoch=-1)
     torch.cuda.empty_cache()
@@ -163,10 +164,10 @@ def main_worker(rank, world_size, args):
         scheduler.step()
 
         # Check if the current model is the best based on validation loss
+        best_model_path = 'checkpoint/best_model.tar'  
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            best_model_path = f'checkpoint/best_model_epoch-{epoch}_loss-{avg_val_loss:.3f}.tar'
-            save_model(model, optimizer, epoch, best_model_path, rank)
+            save_model(model, optimizer, epoch, best_model_path, rank)  # 덮어쓰기로 저장
             print(f'Best model updated with validation loss: {avg_val_loss:.10f}')
             epochs_no_improve = 0  # Reset the counter when improvement is seen
         else:
