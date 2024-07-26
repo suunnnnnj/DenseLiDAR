@@ -164,6 +164,7 @@ def main_worker(rank, world_size, args):
         TrainImgLoader.sampler.set_epoch(epoch)
 
         ## training ##
+        print("[Training]")
         for batch_idx, (image, gt, sparse, pseudo_depth_map, pseudo_gt_map) in tqdm(
                 enumerate(TrainImgLoader), total=len(TrainImgLoader), desc=f"Epoch {epoch}"):
             train_loss, train_s_loss, train_d_loss = train(image, gt, sparse, pseudo_depth_map, pseudo_gt_map, model, optimizer, rank, args)
@@ -176,6 +177,7 @@ def main_worker(rank, world_size, args):
         print()
 
         ## validation ##
+        print("[Validation]")
         for batch_idx, (image, gt, sparse, pseudo_depth_map, pseudo_gt_map) in tqdm(
                 enumerate(ValImgLoader), total=len(ValImgLoader), desc=f"Epoch {epoch}"):
             val_loss, val_s_loss, val_d_loss = validate(image, gt, sparse, pseudo_depth_map, pseudo_gt_map, model, rank, args)
