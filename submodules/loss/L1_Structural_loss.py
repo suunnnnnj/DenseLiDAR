@@ -20,9 +20,9 @@ def gradient_y(img):
         raise ValueError("Expected 4D tensor as input for gradient_y")
     return gy
 
-def l_grad(pseudo_gt, dense_depth):
-    grad_x_true = gradient_x(pseudo_gt)
-    grad_y_true = gradient_y(pseudo_gt)
+def l_grad(pseudo_gt_map, dense_depth):
+    grad_x_true = gradient_x(pseudo_gt_map)
+    grad_y_true = gradient_y(pseudo_gt_map)
     grad_x_pred = gradient_x(dense_depth)
     grad_y_pred = gradient_y(dense_depth)
     grad_loss = torch.mean(torch.abs(grad_x_true - grad_x_pred) + torch.abs(grad_y_true - grad_y_pred))
@@ -92,16 +92,16 @@ def ssim(img1, img2, window_size=11, size_average=True):
     window = window.type_as(img1)
     return _ssim(img1, img2, window, window_size, 1, size_average)
 
-def l_ssim(pseudo_gt, dense_depth):
-    ssim_loss = 1 - ssim(pseudo_gt, dense_depth)
+def l_ssim(pseudo_gt_map, dense_depth):
+    ssim_loss = 1 - ssim(pseudo_gt_map, dense_depth)
     return ssim_loss
 
-def l_structural(pseudo_gt, dense_depth):
+def l_structural(pseudo_gt_map, dense_depth):
     lambda_grad = 1.0
     lambda_ssim = 0.5
 
-    grad_loss = l_grad(pseudo_gt, dense_depth)
-    ssim_loss = l_ssim(pseudo_gt, dense_depth)
+    grad_loss = l_grad(pseudo_gt_map, dense_depth)
+    ssim_loss = l_ssim(pseudo_gt_map, dense_depth)
 
     structural_loss = lambda_grad * grad_loss + lambda_ssim * ssim_loss
     return structural_loss
