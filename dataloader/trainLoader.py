@@ -12,6 +12,7 @@ import torchvision.transforms as transforms
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Preprocess
 IMG_EXTENSIONS = [
     '.jpg', '.JPG', '.jpeg', '.JPEG',
     '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP',
@@ -29,12 +30,8 @@ __imagenet_stats = {'mean': [0.485, 0.456, 0.406],
 
 def scale_crop(input_size, scale_size=None, normalize=__imagenet_stats):
     t_list = [
-        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        # transforms.Normalize(**normalize),
     ]
-    #if scale_size != input_size:
-    #t_list = [transforms.Scale((960,540))] + t_list
 
     return transforms.Compose(t_list)
 
@@ -44,7 +41,6 @@ def get_transform(name='imagenet', input_size=None,
     input_size = 256
     return scale_crop(input_size=input_size,
                               scale_size=scale_size, normalize=normalize)
-
 
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
@@ -60,69 +56,63 @@ def point_loader(path):
     return depth
 
 class myImageFloder(data.Dataset):
-    def __init__(self, left,sparse,gtp,p_depth,gt_depth,training,   #raw image, raw lidar, gt lidar, pseudo depth, gt depth
+    def __init__(self, raw_image,law_lidar,gt_lidar,pseudo_depth,gt_depth,training,
                  loader=default_loader, ploader = point_loader):
-        self.left = left
-        self.sparse = sparse
-        self.gtp = gtp
-        self.p_depth = p_depth
+        self.raw_image = raw_image
+        self.law_lidar = law_lidar
+        self.gt_lidar = gt_lidar
+        self.pseudo_depth = pseudo_depth
         self.gt_depth = gt_depth
         self.loader = loader
-        self.gtploader = ploader #inloader => gtploader gt lidar
-        self.ploader = ploader #sloader => ploader raw lidar
+        self.gtploader = ploader
+        self.ploader = ploader 
         self.training = training
+
     def __getitem__(self, index):
-        left = self.left[index]
-        gtp = self.gtp[index]
-        sparse = self.sparse[index]
-        p_depth = self.p_depth[index]
+        raw_image = self.raw_image[index]
+        gt_lidar = self.gt_lidar[index]
+        law_lidar = self.law_lidar[index]
+        pseudo_depth = self.pseudo_depth[index]
         gt_depth = self.gt_depth[index]
 
-        left_img = self.loader(left)
-        #Left image loaded with shape: (375, 1242, 3) from path: sample/kitti_raw/train/2011_09_26_drive_0001_sync/proj_depth/image_02/0000000002.png
+        raw_image = self.loader(raw_image)  #raw image shape: (375, 1242, 3)
+        h,w,c= raw_image.shape
 
-        index_str = self.left[index].split('/')[-4][0:10]
-        params_t = INSTICS[index_str]
-        params = np.ones((256,512,3),dtype=np.float32)
-        params[:, :, 0] = params[:,:,0] * params_t[0]
-        params[:, :, 1] = params[:, :, 1] * params_t[1]
-        params[:, :, 2] = params[:, :, 2] * params_t[2]
-        #Params initialized with shape: (256, 512, 3)
-
-        h,w,c= left_img.shape
-        # dataload 및 정규화
-        gt_point = self.gtploader(gtp)
-        sparse = self.ploader(sparse)
-        p_depth = self.ploader(p_depth)
+        # dataload & normalization
+        gt_point = self.gtploader(gt_lidar)
+        law_lidar = self.ploader(law_lidar)
+        pseudo_depth = self.ploader(pseudo_depth)
         gt_depth = self.ploader(gt_depth)
-        # Data loaded: gt_point (375, 1242, 1), sparse (375, 1242, 1), p_depth (375, 1242, 1), gt_depth (375, 1242, 1)
+        
+        # Data loaded: gt_point (375, 1242, 1), law_lidar (375, 1242, 1), pseudo_depth (375, 1242, 1), gt_depth (375, 1242, 1)
 
         #random crop
         th, tw = 256,512
         x1 = random.randint(0, w - tw)
         y1 = random.randint(0, h - th)
-        params = np.reshape(params, [256, 512, 3]).astype(np.float32)
 
-        left_img = left_img[y1:y1 + th, x1:x1 + tw, :]
+        raw_image = raw_image[y1:y1 + th, x1:x1 + tw, :]
         gt_point = gt_point[y1:y1 + th, x1:x1 + tw,:]
-        sparse = sparse[y1:y1 + th, x1:x1 + tw, :]
-        p_depth = p_depth[y1:y1 + th, x1:x1 + tw, :]
+        law_lidar = law_lidar[y1:y1 + th, x1:x1 + tw, :]
+        pseudo_depth = pseudo_depth[y1:y1 + th, x1:x1 + tw, :]
         gt_depth = gt_depth[y1:y1 + th, x1:x1 + tw, :]
         processed = get_transform(augment=False)
-        # Cropped data shapes: left_img (256, 512, 3), gt_point (256, 512, 1), sparse (256, 512, 1), p_depth (256, 512, 1), gt_depth (256, 512, 1)
+
+        # Cropped data shapes: raw_image (256, 512, 3), gt_point (256, 512, 1), law_lidar (256, 512, 1), pseudo_depth (256, 512, 1), gt_depth (256, 512, 1)
+        
         # ToTensor
-        left_img = processed(left_img)
-        sparse = processed(sparse)
-        p_depth = processed(p_depth)
+        raw_image = processed(raw_image)
+        law_lidar = processed(law_lidar)
+        pseudo_depth = processed(pseudo_depth)
         gt_depth = processed(gt_depth)
         gt_point = processed(gt_point)
-        # Data transformed: left_img torch.Size([3, 256, 512]), sparse torch.Size([1, 256, 512]), p_depth torch.Size([1, 256, 512]), gt_depth torch.Size([1, 256, 512]), gt_point torch.Size([1, 256, 512])
 
-        return left_img,gt_point,sparse,p_depth,gt_depth,params
+        # Data transformed: raw_image torch.Size([3, 256, 512]), law_lidar torch.Size([1, 256, 512]), pseudo_depth torch.Size([1, 256, 512]), gt_depth torch.Size([1, 256, 512]), gt_point torch.Size([1, 256, 512])
+
+        return raw_image,gt_point,law_lidar,pseudo_depth,gt_depth
 
     def __len__(self):
-        return len(self.left)
-
+        return len(self.raw_image)
 
 if __name__ == '__main__':
     print("")
