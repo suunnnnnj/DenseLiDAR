@@ -1,5 +1,5 @@
-from Submodules.loss.L1_Structural_loss import l_structural
-from Submodules.loss.L2_depth_loss import L2_depth_loss
+from submodules.loss.L1_Structural_loss import l_structural
+from submodules.loss.L2_depth_loss import L2_depth_loss
 
 def total_loss(pseudo_gt, lidar_data, dense_depth):
     structural_loss = l_structural(pseudo_gt, dense_depth)

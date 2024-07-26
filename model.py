@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Module
-from Submodules.DCU import depthCompletionNew_blockN
-from Submodules.data_rectification import rectify_depth
+from submodules.DCU import depthCompletionNew_blockN
+from submodules.data_rectification import rectify_depth
 
 class DenseLiDAR(Module):
     def __init__(self, bs):

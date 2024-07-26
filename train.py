@@ -13,7 +13,7 @@ import time
 from dataloader import dataLoader as lsn
 from dataloader import trainLoader as DA
 from model import DenseLiDAR
-from Submodules.loss.total_loss import total_loss
+from submodules.loss.total_loss import total_loss
 from tqdm import tqdm
 import torch.multiprocessing as mp
 from torch.optim import AdamW
