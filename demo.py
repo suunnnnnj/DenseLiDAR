@@ -9,7 +9,7 @@ import cv2
 import argparse
 import numpy as np
 from model import DenseLiDAR
-# from Submodules.utils.visualization import *
+# from submodules.utils.visualization import *
 
 def load_image(image_path):
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
@@ -65,11 +65,11 @@ def main(model_path, image_path, sparse_path, pseudo_depth_map_path, output_path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DenseLiDAR Inference Demo')
-    parser.add_argument('--model_path', type=str, required=True, help='Path to the pretrained model')
-    parser.add_argument('--image_path', type=str, required=True, help='Path to the image')
-    parser.add_argument('--sparse_path', type=str, required=True, help='Path to the sparse LiDAR data')
-    parser.add_argument('--pseudo_depth_map_path', type=str, required=True, help='Path to the pseudo depth map')
-    parser.add_argument('--output_path', type=str, required=True, help='Path to save the final dense depth map')
+    parser.add_argument('--model_path', type=str, default='checkpoint/epoch-15_loss-4.220.tar', help='Path to the pretrained model')
+    parser.add_argument('--image_path', type=str, default='demo/demo_image.png', help='Path to the image')
+    parser.add_argument('--sparse_path', type=str, default='demo/demo_velodyne.png', help='Path to the sparse LiDAR data')
+    parser.add_argument('--pseudo_depth_map_path', type=str, default='demo/demo_pseudo_depth.png', help='Path to the pseudo depth map')
+    parser.add_argument('--output_path', type=str, default='demo/final.png', help='Path to save the final dense depth map')
     args = parser.parse_args()
     
     main(args.model_path, args.image_path, args.sparse_path, args.pseudo_depth_map_path, args.output_path)
