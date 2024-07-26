@@ -1,5 +1,6 @@
 best_model.tar
 datasets/
+checkpoint/
 __pycache__/
 Submodules/__pycache__/
 Submodules/loss/__pycache__/

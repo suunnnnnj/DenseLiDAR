@@ -2,7 +2,7 @@
 import os
 import shutil
 from tqdm import tqdm
-"""
+
 root_dir = '/home/research1/Desktop/gachon/SSDC/datasets'
 
 
@@ -137,9 +137,9 @@ for dir in tqdm(val_list):
                 print("Directory is Empty.")
         except Exception as e:
             print(e)
-            pass"""
+            pass
 
-'''img_dir_src = ['image_02/data/', 'image_03/data/']
+img_dir_src = ['image_02/data/', 'image_03/data/']
 img_dir_dst = ['proj_depth/raw_image/image_02/', 'proj_depth/raw_image/image_03/']
 
 for dir in train_list:
@@ -154,8 +154,8 @@ for dir in train_list:
             
         except Exception as e:
             print(e)
-            pass'''
-'''
+            pass
+
 
 def move_files_from_multiple_folders(src_base_path, dest_base_path):
     # Iterate through all subfolders in the source base path
@@ -189,7 +189,7 @@ src_base_path = "/home/research1/Desktop/gachon/SSDC/datasets/kitti_raw/val"
 dest_base_path = "/home/research1/Desktop/gachon/SSDC/datasets/kitti_raw/val"
         
 move_files_from_multiple_folders(src_base_path, dest_base_path)
-'''
+
 
 import os
 import shutil
