@@ -1,119 +1,97 @@
-import argparse
-import numpy as np
-import os
+#argument : model path ,demo image path, demo velodyne path, demo pseudo depth map path
+#Ex : python3 demo.py --model_path checkpoint/epoch-5_loss-4.412.tar --left_image_path demo_image.png --sparse_depth_path demo_velodyne.png --pseudo_depth_map_path demo_pseudo_depth.png 
+
 import torch
-import torch.nn as nn
-import torch.utils.data
-import torchvision.transforms as transforms
-from torch.autograd import Variable
-import skimage.io
+from torch.nn import Module
 import cv2
-from model import DenseLiDAR
-from PIL import Image
+import matplotlib.pyplot as plt
+import argparse
+import torchvision.transforms as transforms
+import numpy as np
+from model import DenseLiDAR  # 필요한 모듈을 임포트하세요
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Argument parser
-parser = argparse.ArgumentParser(description='deepCompletion')
-parser.add_argument('--loadmodel', default='', help='load model')
-parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
-parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
-args = parser.parse_args()
-args.cuda = not args.no_cuda and torch.cuda.is_available()
-
-torch.manual_seed(args.seed)
-if args.cuda:
-    torch.cuda.manual_seed(args.seed)
-
-# Load model
-model = DenseLiDAR(1)
-model.cuda()
-
-modelpath = os.path.join(ROOT_DIR, args.loadmodel)
-
-if modelpath is not None:
-    checkpoint = torch.load(modelpath, map_location=torch.device('cpu'))
-    print("Checkpoint keys:", checkpoint.keys())
-
-    if 'model_state_dict' in checkpoint:
-        state_dict = checkpoint['model_state_dict']
+def visualize_tensor(tensor, title="Tensor Visualization", num_channels_to_display=3):
+    tensor = tensor.detach().cpu().numpy()
+    
+    if tensor.ndim == 4:  # Batch, Channels, Height, Width
+        tensor = tensor[0]  # 배치의 첫 번째 샘플 선택
+    
+    num_channels = tensor.shape[0]
+    
+    if num_channels == 1:  # 단일 채널 이미지
+        tensor = tensor[0]  # 채널 차원 제거
+        plt.imshow(tensor, cmap='gray')
+        plt.title(f"{title} (channel 1)")
+        plt.axis('off')
+        plt.show()
+    elif num_channels == 3:  # RGB 이미지
+        tensor = np.transpose(tensor, (1, 2, 0))  # 차원을 Height, Width, Channels로 재배치
+        plt.imshow(tensor)
+        plt.title(title)
+        plt.axis('off')
+        plt.show()
     else:
-        state_dict = checkpoint
+        # 첫 몇 개 채널을 별도 이미지로 표시
+        fig, axes = plt.subplots(1, num_channels_to_display, figsize=(15, 5))
+        for i in range(min(num_channels, num_channels_to_display)):
+            axes[i].imshow(tensor[i], cmap='gray')
+            axes[i].set_title(f"{title} (channel {i + 1})")
+            axes[i].axis('off')
+        plt.show()
 
-    state_dict = {k.replace('DCU.', ''): v for k, v in state_dict.items() if k.startswith('DCU.')}
+def load_image(image_path):
+    image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    transform = transforms.ToTensor()
+    image_tensor = transform(image).unsqueeze(0).float()
+    return image_tensor.cuda()
 
-    model.load_state_dict(state_dict, strict=False)
-    print(f"Loaded pretrained model weights from {modelpath}.")
+def load_depth_map(depth_map_path):
+    depth_map = cv2.imread(depth_map_path, cv2.IMREAD_ANYDEPTH)
+    depth = depth_map.astype(np.float32) / 256.0
+    depth_tensor = torch.tensor(depth).unsqueeze(0).unsqueeze(0).float()
+    return depth_tensor.cuda()
 
-# Test function
-def test(imgL, sparse, pseudo_depth):
+def remove_module_prefix(state_dict):
+    # 'module.' 접두사를 제거하여 state_dict 키를 수정
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        name = k[7:] if k.startswith('module.') else k  # remove `module.`
+        new_state_dict[name] = v
+    return new_state_dict
+
+def main(model_path, left_image_path, sparse_depth_path, pseudo_depth_map_path):
+    # 이미지와 깊이 맵 로드
+    left_image = load_image(left_image_path)
+    sparse_depth = load_depth_map(sparse_depth_path)
+    pseudo_depth_map = load_depth_map(pseudo_depth_map_path)
+
+    # 모델 초기화
+    model = DenseLiDAR(bs=1).cuda()  # bs 매개변수 설정
+    
+    # 사전 학습된 모델 로드
+    checkpoint = torch.load(model_path)
+    state_dict = remove_module_prefix(checkpoint['model_state_dict'])
+    model.load_state_dict(state_dict)
     model.eval()
-    if args.cuda:
-        imgL = torch.FloatTensor(imgL).cuda()
-        sparse = torch.FloatTensor(sparse).cuda()
-        pseudo_depth = torch.FloatTensor(pseudo_depth).cuda()
-
-    imgL = Variable(imgL)
-    sparse = Variable(sparse)
-    pseudo_depth = Variable(pseudo_depth)
-
-    device = "cuda"
+    
+    # Forward pass
     with torch.no_grad():
-        dense_depth = model(imgL, sparse, pseudo_depth, device)
+        final_dense_depth = model(left_image, sparse_depth, pseudo_depth_map, 'cuda')
 
-    dense_depth = torch.squeeze(dense_depth)
-
-    return dense_depth.data.cpu().numpy()
-
-def scale_crop():
-    t_list = [transforms.ToTensor()]
-    return transforms.Compose(t_list)
-
-def get_transform():
-    return scale_crop()
-
-# Main function
-def main():
-    processed = get_transform()
-
-    pseudo_depth_fold = 'demo_pseudo_depth.png'
-    left_fold = 'demo_image.png'
-    lidar2_raw = 'demo_velodyne.png'
-
-    imgL_o = skimage.io.imread(left_fold)
-    imgL_o = np.reshape(imgL_o, [imgL_o.shape[0], imgL_o.shape[1], 3])
-    imgL = processed(imgL_o).numpy()
-    imgL = np.reshape(imgL, [1, 3, imgL_o.shape[0], imgL_o.shape[1]])
-
-    p_depth = skimage.io.imread(pseudo_depth_fold).astype(np.float32)
-    p_depth = p_depth * 1.0 / 256.0
-    p_depth = np.reshape(p_depth, [imgL_o.shape[0], imgL_o.shape[1], 1])
-    p_depth = processed(p_depth).numpy()
-    p_depth = np.reshape(p_depth, [1, 1, imgL_o.shape[0], imgL_o.shape[1]])
-
-    sparse = skimage.io.imread(lidar2_raw).astype(np.float32)
-    sparse = sparse * 1.0 / 256.0
-    sparse = np.reshape(sparse, [imgL_o.shape[0], imgL_o.shape[1], 1])
-    sparse = processed(sparse).numpy()
-    sparse = np.reshape(sparse, [1, 1, imgL_o.shape[0], imgL_o.shape[1]])
-
-    output1 = "dense_depth_output.png"
-
-    pred = test(imgL, sparse, p_depth)
-    pred = np.where(pred <= 0.0, 0.9, pred)
-
-    # 정규화 과정 추가
-    pred_min = np.min(pred)
-    pred_max = np.max(pred)
-
-    # Normalize to 0-255
-    pred_normalized = (pred - pred_min) / (pred_max - pred_min) * 255.0
-    pred_normalized = pred_normalized.astype('uint8')    
-    # Apply colormap
-    pred_colormap = cv2.applyColorMap(pred_normalized, cv2.COLORMAP_JET)
-
-    # Save the image
-    cv2.imwrite(output1, pred_colormap)
-
-if __name__ == '__main__':
-    main()
+    # 결과 시각화
+    visualize_tensor(left_image, title="Left Image")
+    visualize_tensor(sparse_depth, title="Sparse Depth")
+    visualize_tensor(pseudo_depth_map, title="Pseudo Depth Map")
+    visualize_tensor(final_dense_depth, title="Final Dense Depth Map")
+    final_dense_depth = final_dense_depth.cpu()
+    print(np.unique(final_dense_depth))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='DenseLiDAR Inference Demo')
+    parser.add_argument('--model_path', type=str, required=True, help='Path to the pretrained model')
+    parser.add_argument('--left_image_path', type=str, required=True, help='Path to the left image')
+    parser.add_argument('--sparse_depth_path', type=str, required=True, help='Path to the sparse depth map')
+    parser.add_argument('--pseudo_depth_map_path', type=str, required=True, help='Path to the pseudo depth map')
+    args = parser.parse_args()
+    
+    main(args.model_path, args.left_image_path, args.sparse_depth_path, args.pseudo_depth_map_path)
