@@ -171,48 +171,28 @@ class depthCompletionNew_blockN(nn.Module):
 
         out6 = self.predict_normal6(out_conv6)
         normal6_up = self.upsampled_normal6_to_5(out6)
-        #visualize_tensor(normal6_up, "normal6_up")
-        # normal6_up(1,1,32,64)
         out_deconv5 = self.deconv5(out_conv6)
-        # out_deconv5(1,256,32,64)
 
         concat5 = adaptative_cat(out_conv5, out_deconv5, normal6_up)+inputS_conv3
-        #visualize_tensor(concat5, "concat5")
-        # concat5(1,513,32,64)
         out5 = self.predict_normal5(concat5)
-        #visualize_tensor(out5, "out5")
-        # out5(1,1,32,64)
         normal5_up = self.upsampled_normal5_to_4(out5)
-        # normal5_up(1,1,64,128)
         out_deconv4 = self.deconv4(concat5)
-        # out_deconv5(1,128,64,128)
+
         concat4 = adaptative_cat(out_conv4, out_deconv4, normal5_up)+inputS_conv2
-        #visualize_tensor(concat4, "concat4")
-        # concat5(1,385,64,128). out_conv5(1,256,64,128). normal5_up(1,1,64,128)
         out4 = self.predict_normal4(concat4)
-        #visualize_tensor(out4, "out4")
         normal4_up = self.upsampled_normal4_to_3(out4)
-        #visualize_tensor(normal4_up, "normal4_up")
         out_deconv3 = self.deconv3(concat4)
 
         concat3 = adaptative_cat(out_conv3, out_deconv3, normal4_up)+inputS_conv1
-        #visualize_tensor(concat3, "concat3")
         out3 = self.predict_normal3(concat3)
-        #visualize_tensor(out3, "out3")
-
         normal3_up = self.upsampled_normal3_to_2(out3)
-        #visualize_tensor(normal3_up, "normal3_up")
         out_deconv2 = self.deconv2(concat3)
 
         concat2 = adaptative_cat(out_conv2, out_deconv2, normal3_up)+inputS_conv0
-        #visualize_tensor(concat2, "concat2")
-        # concat2(1,97,256,512)
         out2 = self.predict_normal2(concat2)
-        #visualize_tensor(out2, "out2")
-        # out2(1,2,256,512)
         normal2 = out2
+
         normal2 = normal2[:,1,:,:]
         normal2 = normal2.unsqueeze(1)
-        #visualize_tensor(normal2,"normal2")
 
         return normal2, concat2
