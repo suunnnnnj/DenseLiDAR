@@ -1,3 +1,8 @@
+"""
+Argument : data path, epochs, checkpoint, batch size, gpu nums, etc.
+Example : python train.py --data_path datasets/ --epochs 40 --batch_size 16 --gpu_nums 4 --patience 15
+"""
+
 import argparse
 import os
 import torch
@@ -179,7 +184,7 @@ def main(rank, world_size, args):
             total_train_d_loss += train_d_loss
             
         print('Epoch %d total training loss = %.10f' % (epoch, total_train_loss / len(TrainImgLoader)))
-        print('Epoch %d structural training loss = %.10f, depth training loss = %.10f' % (epoch, total_train_s_loss / len(TrainImgLoader), total_train_d_loss / len(TrainImgLoader)))
+        print('Epoch %d training structural loss = %.10f, training depth loss = %.10f' % (epoch, total_train_s_loss / len(TrainImgLoader), total_train_d_loss / len(TrainImgLoader)))
         print()
 
         ## validation ##
@@ -195,7 +200,7 @@ def main(rank, world_size, args):
         avg_val_loss = total_val_loss / len(ValImgLoader)
 
         print('Epoch %d total validation loss = %.10f' % (epoch, avg_val_loss))
-        print('Epoch %d structural validation loss = %.10f, depth validation loss = %.10f' % (epoch, total_val_s_loss / len(ValImgLoader), total_val_d_loss / len(ValImgLoader)))
+        print('Epoch %d validation structural loss = %.10f, validation depth loss = %.10f' % (epoch, total_val_s_loss / len(ValImgLoader), total_val_d_loss / len(ValImgLoader)))
         print()
         
         scheduler.step()
@@ -218,7 +223,7 @@ def main(rank, world_size, args):
             save_path = f'checkpoint/epoch-{epoch}_loss-{avg_val_loss:.3f}.tar'
             save_model(model, optimizer, epoch, save_path, rank)
 
-    print('full finetune time = %.2f HR\n' % ((time.time() - start_full_time) / 3600))
+    print('Full finetune time = %.2f HR\n' % ((time.time() - start_full_time) / 3600))
 
     if best_model_path:
         print(f'The best model is saved at: {best_model_path}\n')

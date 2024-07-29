@@ -17,75 +17,82 @@ R = np.array([
 
 T = np.array([-4.069766e-03, -7.631618e-02, -2.717806e-01])
 
-# PATH
-point_cloud_image_path = 'gt_lidar.png'
-depth_image = cv2.imread("dense_depth_output.png", cv2.IMREAD_GRAYSCALE)
-color_image = cv2.imread("demo_image.png")
+# Paths to depth and color images
+depth_image_path = '/home/mobiltech/SSDC/post_process/post_processing_depth.png'
+color_image_path = '/home/mobiltech/SSDC/demo/demo_image.png'
 
+# Load the depth and color images
+depth_image = cv2.imread(depth_image_path, cv2.IMREAD_GRAYSCALE)
+color_image = cv2.imread(color_image_path)
+
+# Ensure color image is in RGB format
+color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+
+# Image dimensions
 height, width = depth_image.shape
 
-# Create VTK data structures
+# VTK data structures
 points = vtk.vtkPoints()
-vertices = vtk.vtkCellArray()
 colors = vtk.vtkUnsignedCharArray()
 colors.SetNumberOfComponents(3)
-colors.SetName("Colors")
+vertices = vtk.vtkCellArray()
 
-# Remove background
+# Background removal thresholds
 background_threshold_low = 1
 background_threshold_high = 254
+
+# Get valid pixels
 valid_pixels = np.where((depth_image >= background_threshold_low) & 
                         (depth_image <= background_threshold_high))
 
-# Add points to VTK
+# Iterate over valid pixels
 for y, x in zip(valid_pixels[0], valid_pixels[1]):
     z = depth_image[y, x]
-    # Scale depth value to real-world units if needed
     z_scaled = z / 255.0  # Example scaling factor (adjust as needed)
     
     # Convert depth image coordinates to 3D coordinates
     X = (x - cx) * z_scaled / fx
     Y = (y - cy) * z_scaled / fy
     Z = z_scaled  # Depth value as Z coordinate
-
+    
     # Apply rotation and translation
     point = np.array([X, Y, Z])
     point_transformed = R @ point + T
+    
+    # Color mapping
+    color = color_image[y, x]  # BGR format; convert to RGB as needed
+    colors.InsertNextTuple3(color[2], color[1], color[0])  # Insert RGB color
     
     # Insert point into VTK structure
     point_id = points.InsertNextPoint(point_transformed[0], point_transformed[1], point_transformed[2])
     vertices.InsertNextCell(1)
     vertices.InsertCellPoint(point_id)
 
-    # Get the color from the color image
-    color = color_image[y, x]
-    colors.InsertNextTuple3(color[2], color[1], color[0])  # BGR to RGB
-
-# Create PolyData object and add Points, Vertices, Colors
+# Create PolyData object and add Points, Colors, Vertices
 poly_data = vtk.vtkPolyData()
 poly_data.SetPoints(points)
+poly_data.GetPointData().SetScalars(colors)  # Set color data
 poly_data.SetVerts(vertices)
-poly_data.GetPointData().SetScalars(colors)
 
-# Create Mapper and set PolyData
+# Create a mapper and set the input
 mapper = vtk.vtkPolyDataMapper()
 mapper.SetInputData(poly_data)
 
-# Create Actor and set Mapper
+# Create an actor and set the mapper
 actor = vtk.vtkActor()
 actor.SetMapper(mapper)
 
-# Create Renderer, Render Window, and Interactor
+# Set up the renderer, render window, and interactor
 renderer = vtk.vtkRenderer()
 render_window = vtk.vtkRenderWindow()
 render_window.AddRenderer(renderer)
 render_window_interactor = vtk.vtkRenderWindowInteractor()
 render_window_interactor.SetRenderWindow(render_window)
 
-# Add Actor to Renderer
+# Add the actor to the renderer and set the background color
 renderer.AddActor(actor)
-renderer.SetBackground(0.1, 0.2, 0.3)
+renderer.SetBackground(0.1, 0.2, 0.3)  # Background color
 
-# Start rendering and interaction
+# Render and interact
 render_window.Render()
 render_window_interactor.Start()

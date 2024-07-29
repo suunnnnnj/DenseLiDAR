@@ -65,7 +65,7 @@ python train.py --datapath [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [C
 - `--gpu_nums`: number of gpus to train | default: 1
 - `--seed`: random seed (default: 1) | default: 1
 
-example
+**Example**
 ```
 python train.py --datapath kitti_dataset/ --epochs 50 --checkpoint 10 --batch_size 64 --gpu_nums 4 --seed 23
 ```
