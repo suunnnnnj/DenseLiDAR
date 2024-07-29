@@ -55,36 +55,35 @@ kitti_depth
 
 ### Training
 ```
-python train.py --data_path [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [CHECKPOINT] --batch_size [BATCH_SIZE] --gpu_nums [YOUR_GPU_NUMS] --seed [RANDOM_SEED]
+python train.py --data_path [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [CHECKPOINT] --batch_size [BATCH_SIZE] --gpu_nums [YOUR_GPU_NUMS]
 ```
 **Arguments**
-- `--datapath`: your dataset path | default: datasets/
+- `--datapath`: your dataset path | default: None
 - `--epochs`: number of epochs to train | default: 40
 - `--checkpoint`: number of epochs to making checkpoint | default: 5
 - `--batch_size`: number of batch size to train | default: 1
 - `--gpu_nums`: number of gpus to train | default: 1
-- `--seed`: random seed (default: 1) | default: 1
 
 **Example**
 ```
-python train.py --data_path kitti_dataset/ --epochs 50 --checkpoint 10 --batch_size 64 --gpu_nums 4 --seed 23
+python train.py --data_path datasets/ --epochs 40 --batch_size 16 --gpu_nums 4
 ```
 
 ### Demo
 ```
-python demo.py --model_path [YOUR_MODEL_PATH] --image_path [YOUR_IMAGE_PATH] --sparse_path [YOUR_POINT_PATH] --pseudo_depth_map_path [YOUR_PSEUDO_MAP_PATH] --output_path [YOUR_SAVE_PATH]
+python demo.py --model_path [YOUR_MODEL_PATH] --image_path [YOUR_IMAGE_PATH] --sparse_path [YOUR_LIDAR_POINT_PATH] --pseudo_depth_map_path [YOUR_PSEUDO_DEPTH_MAP_PATH] --output_path [YOUR_SAVE_PATH]
 ```
 **Arguments**
 - `--model_path`: your model path | default: None
 - `--image_path`: your raw image path | default: demo/demo_image.png
 - `--sparse_path`: your raw lidar path | default: demo/demo_velodyne.png
-- `--pseudo_depth_map_path`: your pseudo depth map path | default: demo/demo_paseudo_depth.png
+- `--pseudo_depth_map_path`: your pseudo depth map path | default: demo/demo_pseudo_depth.png
 - `--output_path`: your save result path | default: demo/dense_depth_output.png
 
-
-
-### Running
-- Placeholder
+**Example**
+```
+python demo.py --model_path checkpoint/epoch-5_loss-3.273.tar --image_path demo/demo_image.png --sparse_path demo/demo_velodyne.png --pseudo_depth_map_path demo/demo_pseudo_depth.png --output_path demo/dense_depth_output.png
+```
 
 <details>
   <summary><h3>Our Variation Samples</h3></summary>
