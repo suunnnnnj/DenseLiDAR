@@ -48,26 +48,26 @@ kitti_depth
       ├── 2011_09_29
       ├── 2011_09_30
       └── 2011_10_03
-```
+```  
 
 
 ## Usage
 
 ### Training
 ```
-python train.py --datapath [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [CHECKPOINT] --batch_size [BATCH_SIZE] --gpu_nums [YOUR_GPU_NUMS] --seed [RANDOM_SEED]
+python train.py --data_path [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [CHECKPOINT] --batch_size [BATCH_SIZE] --gpu_nums [YOUR_GPU_NUMS] --seed [RANDOM_SEED]
 ```
 **Arguments**
 - `--datapath`: your dataset path | default: datasets/
 - `--epochs`: number of epochs to train | default: 40
-- `--checkpoint`: number of epochs to making checkpoint | default: 10
-- `--batch_size`: number of batch size to train | default: 64
+- `--checkpoint`: number of epochs to making checkpoint | default: 5
+- `--batch_size`: number of batch size to train | default: 1
 - `--gpu_nums`: number of gpus to train | default: 1
 - `--seed`: random seed (default: 1) | default: 1
 
 **Example**
 ```
-python train.py --datapath kitti_dataset/ --epochs 50 --checkpoint 10 --batch_size 64 --gpu_nums 4 --seed 23
+python train.py --data_path kitti_dataset/ --epochs 50 --checkpoint 10 --batch_size 64 --gpu_nums 4 --seed 23
 ```
 
 ### Running
@@ -99,5 +99,3 @@ python train.py --datapath kitti_dataset/ --epochs 50 --checkpoint 10 --batch_si
 
 
 </details>
-
-
