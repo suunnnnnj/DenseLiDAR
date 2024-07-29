@@ -20,12 +20,12 @@ def load_image(image_path):
     return image_tensor.cuda()
 
 
-def load_pseudo_depth_map(pseudo_depth_map_path):
-    pseudo_depth_map = cv2.imread(pseudo_depth_map_path, cv2.IMREAD_ANYDEPTH)
-    pseudo_depth_map = pseudo_depth_map.astype(np.float32) / 256.0
-    pseudo_depth_map_tensor = torch.tensor(pseudo_depth_map).unsqueeze(0).unsqueeze(0).float()
+def load_another_data(another_data_path):
+    another_data = cv2.imread(another_data_path, cv2.IMREAD_ANYDEPTH)
+    another_data = another_data.astype(np.float32) / 256.0
+    another_data_tensor = torch.tensor(another_data).unsqueeze(0).unsqueeze(0).float()
 
-    return pseudo_depth_map_tensor.cuda()
+    return another_data_tensor.cuda()
 
 
 def remove_module_prefix(state_dict):
@@ -45,8 +45,8 @@ def save_depth_map(dense_depth, output_path):
 
 def main(model_path, image_path, sparse_path, pseudo_depth_map_path, output_path):
     image = load_image(image_path)
-    sparse = load_pseudo_depth_map(sparse_path)
-    pseudo_depth_map = load_pseudo_depth_map(pseudo_depth_map_path)
+    sparse = load_another_data(sparse_path)
+    pseudo_depth_map = load_another_data(pseudo_depth_map_path)
 
     model = DenseLiDAR(bs=1).cuda()
     
@@ -65,11 +65,11 @@ def main(model_path, image_path, sparse_path, pseudo_depth_map_path, output_path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DenseLiDAR Inference Demo')
-    parser.add_argument('--model_path', type=str, default='checkpoint/epoch-15_loss-4.220.tar', help='Path to the pretrained model')
+    parser.add_argument('--model_path', type=str, default='', help='Path to the pretrained model')
     parser.add_argument('--image_path', type=str, default='demo/demo_image.png', help='Path to the image')
     parser.add_argument('--sparse_path', type=str, default='demo/demo_velodyne.png', help='Path to the sparse LiDAR data')
     parser.add_argument('--pseudo_depth_map_path', type=str, default='demo/demo_pseudo_depth.png', help='Path to the pseudo depth map')
-    parser.add_argument('--output_path', type=str, default='demo/final.png', help='Path to save the final dense depth map')
+    parser.add_argument('--output_path', type=str, default='demo/dense_depth_output.png', help='Path to save the final dense depth map')
     args = parser.parse_args()
     
     main(args.model_path, args.image_path, args.sparse_path, args.pseudo_depth_map_path, args.output_path)
