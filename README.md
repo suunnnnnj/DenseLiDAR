@@ -70,6 +70,19 @@ python train.py --data_path [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [
 python train.py --data_path kitti_dataset/ --epochs 50 --checkpoint 10 --batch_size 64 --gpu_nums 4 --seed 23
 ```
 
+### Demo
+```
+python demo.py --model_path [YOUR_MODEL_PATH] --image_path [YOUR_IMAGE_PATH] --sparse_path [YOUR_POINT_PATH] --pseudo_depth_map_path [YOUR_PSEUDO_MAP_PATH] --output_path [YOUR_SAVE_PATH]
+```
+**Arguments**
+- `--model_path`: your model path | default: None
+- `--image_path`: your raw image path | default: demo/demo_image.png
+- `--sparse_path`: your raw lidar path | default: demo/demo_velodyne.png
+- `--pseudo_depth_map_path`: your pseudo depth map path | default: demo/demo_paseudo_depth.png
+- `--output_path`: your save result path | default: demo/dense_depth_output.png
+
+
+
 ### Running
 - Placeholder
 
