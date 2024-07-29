@@ -87,7 +87,8 @@ python demo.py --model_path checkpoint/epoch-5_loss-3.273.tar --image_path demo/
 
 <details>
   <summary><h3>Our Variation Samples</h3></summary>
-  ## Basic DenseLiDAR Architecture
+      
+## Basic DenseLiDAR Architecture
 <img width="1303" alt="image" src="https://github.com/user-attachments/assets/4401a6aa-e52c-4239-bf95-16cd1e204443">
 
 ### 1. Add SAM from Basic DenseLiDAR
