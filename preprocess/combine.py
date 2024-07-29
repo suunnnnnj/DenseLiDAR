@@ -17,32 +17,27 @@ R = np.array([
 
 T = np.array([-4.069766e-03, -7.631618e-02, -2.717806e-01])
 
-# Point cloud 데이터가 저장된 이미지 경로 설정
+# PATH
 point_cloud_image_path = 'gt_lidar.png'
-
-# 이미지를 불러오기 (여기서 이미지의 각 픽셀 값이 LIDAR 포인트의 Z 좌표 또는 거리 값이라고 가정)
-depth_image = cv2.imread("filtered_depth_image.png", cv2.IMREAD_GRAYSCALE)
+depth_image = cv2.imread("dense_depth_output.png", cv2.IMREAD_GRAYSCALE)
 color_image = cv2.imread("demo_image.png")
 
-# 이미지 크기 가져오기
 height, width = depth_image.shape
 
-# VTK 데이터 구조 생성
+# Create VTK data structures
 points = vtk.vtkPoints()
 vertices = vtk.vtkCellArray()
 colors = vtk.vtkUnsignedCharArray()
 colors.SetNumberOfComponents(3)
 colors.SetName("Colors")
 
-# 배경 제거 기준 설정 (예: 깊이 값이 0이거나 255인 픽셀을 배경으로 간주)
+# Remove background
 background_threshold_low = 1
 background_threshold_high = 254
-
-# NumPy 배열을 사용하여 배경을 제거한 포인트 생성
 valid_pixels = np.where((depth_image >= background_threshold_low) & 
                         (depth_image <= background_threshold_high))
 
-# 포인트를 VTK에 추가
+# Add points to VTK
 for y, x in zip(valid_pixels[0], valid_pixels[1]):
     z = depth_image[y, x]
     # Scale depth value to real-world units if needed
@@ -66,31 +61,31 @@ for y, x in zip(valid_pixels[0], valid_pixels[1]):
     color = color_image[y, x]
     colors.InsertNextTuple3(color[2], color[1], color[0])  # BGR to RGB
 
-# PolyData 객체 생성 및 Points, Vertices, Colors 추가
+# Create PolyData object and add Points, Vertices, Colors
 poly_data = vtk.vtkPolyData()
 poly_data.SetPoints(points)
 poly_data.SetVerts(vertices)
 poly_data.GetPointData().SetScalars(colors)
 
-# Mapper 생성 및 PolyData 설정
+# Create Mapper and set PolyData
 mapper = vtk.vtkPolyDataMapper()
 mapper.SetInputData(poly_data)
 
-# Actor 생성 및 Mapper 설정
+# Create Actor and set Mapper
 actor = vtk.vtkActor()
 actor.SetMapper(mapper)
 
-# Renderer, Render Window 및 Interactor 생성
+# Create Renderer, Render Window, and Interactor
 renderer = vtk.vtkRenderer()
 render_window = vtk.vtkRenderWindow()
 render_window.AddRenderer(renderer)
 render_window_interactor = vtk.vtkRenderWindowInteractor()
 render_window_interactor.SetRenderWindow(render_window)
 
-# Actor를 Renderer에 추가
+# Add Actor to Renderer
 renderer.AddActor(actor)
-renderer.SetBackground(0.1, 0.2, 0.3)  # 배경색 설정
+renderer.SetBackground(0.1, 0.2, 0.3)
 
-# 렌더링 및 상호작용 시작
+# Start rendering and interaction
 render_window.Render()
 render_window_interactor.Start()
