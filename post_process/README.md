@@ -48,5 +48,5 @@ python 3d_visualization.py
 ```
 ### Result
 
-![Screenshot from 2024-07-30 15-52-55](https://github.com/user-attachments/assets/7c50ee4d-8822-4ae9-8047-27ec8b28ef76)
+![Screenshot from 2024-07-30 15-58-49](https://github.com/user-attachments/assets/7c1151c1-2bb8-4cc7-a348-06a86f318f38)
 
