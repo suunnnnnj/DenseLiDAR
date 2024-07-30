@@ -23,8 +23,8 @@ Please note that this implementation is not the official code provided by the au
 
 ### Installation
 ```
-git clone https://github.com/suunnnnnj/SSDC.git
-cd SSDC
+git clone https://github.com/suunnnnnj/DenseLiDAR.git
+cd DenseLiDAR
 pip install -r requirements.txt
 ```
 
