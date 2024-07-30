@@ -3,6 +3,7 @@ This repo is non-offical implement of paper : [DenseLiDAR: A Real-time Pseudo De
 > Jiaqi Gu. et al, DenseLiDAR: A Real-Time Pseudo Dense Depth Guided Depth Completion Network. ICRA2021
 
 We would like to thank Jiaqi Gu et al. for their groundbreaking work on DenseLiDAR. This implementation was inspired by their paper presented at ICRA 2021. Additionally, we appreciate the contributions of the open-source community and the resources provided by [PyTorch](https://pytorch.org/).
+### This project was conducted as part of the Internship program at Mobiltech and Gachon University VIPlab.
 
 - Implementation by. 구도연, 김다혜, 조재현 [[VIPlab Gachon University.](https://sites.google.com/view/vip-lab)]
 - Project Supervision : 정선재 [[Mobiltech](https://www.mobiltech.io/)]
