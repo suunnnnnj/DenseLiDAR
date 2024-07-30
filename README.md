@@ -1,12 +1,28 @@
-# Self-Supervised Depth Completion
-Mobiltech-Gachon PJ for the month
+# A Real-time Pseudo Dense Depth Guided Depth Completion Network(Non-official)
+This repo is non-offical implementaton of paper : [DenseLiDAR: A Real-time Pseudo Dense Depth Guided Depth Completion Network](https://arxiv.org/pdf/2108.12655)
+> Jiaqi Gu. et al, DenseLiDAR: A Real-Time Pseudo Dense Depth Guided Depth Completion Network. ICRA2021
+
+We would like to thank Jiaqi Gu et al. for their groundbreaking work on DenseLiDAR. This implementation was inspired by their paper presented at ICRA 2021. Additionally, we appreciate the contributions of the open-source community and the resources provided by [PyTorch](https://pytorch.org/).
+### This project was conducted as part of the Internship program at Mobiltech and Gachon University VIPlab.
+
+- Implementation by. 구도연, 김다혜, 조재현 [[VIPlab Gachon University.](https://sites.google.com/view/vip-lab)]
+- Project Supervision : 정선재 [[Mobiltech.](https://www.mobiltech.io/)]
+
+## Disclaimer
+
+Please note that this implementation is not the official code provided by the authors of the paper. As such, the performance metrics obtained using our code may differ from those reported in the original paper. Differences in implementation details, parameter settings, and hardware can all contribute to variations in performance.
 
 
-## Target Architecture
-<img width="1173" alt="image" src="https://github.com/user-attachments/assets/74fd3a33-5b4e-4949-be80-1177079d8825">
+## DenseLiDAR Architecture
+![Screenshot from 2024-07-30 14-20-04](https://github.com/user-attachments/assets/ac04090d-93b6-44b8-8a18-276f0186e555)
+<img width="1173" alt="image" src="https://github.com/user-attachments/assets/4401a6aa-e52c-4239-bf95-16cd1e204443">
 
-- For using raw image input and SAM result simultaneously.
-- `dcu(dcu(guided_LiDAR + raw_image) + dcu(raw_LiDAR + guided_image)) `
+## DenseLiDAR Depth Completion Results on paper
+> Please note that the ours implementation is not the same.
+
+![res](https://github.com/user-attachments/assets/eeba8406-866a-4caf-8764-37b5619d66eb)
+
+You can check our implementation result of Depth completion/3D Visualization on [this link](https://github.com/suunnnnnj/DenseLiDAR/tree/main/post_process#post-processing--3d-visualization)
 
 ## Requirements
 - Ubuntu 20.04 LTS
@@ -15,8 +31,8 @@ Mobiltech-Gachon PJ for the month
 
 ### Installation
 ```
-git clone https://github.com/suunnnnnj/SSDC.git
-cd SSDC
+git clone https://github.com/suunnnnnj/DenseLiDAR.git
+cd DenseLiDAR
 pip install -r requirements.txt
 ```
 
@@ -55,60 +71,32 @@ kitti_depth
 
 ### Training
 ```
-python train.py --data_path [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [CHECKPOINT] --batch_size [BATCH_SIZE] --gpu_nums [YOUR_GPU_NUMS] --seed [RANDOM_SEED]
+python train.py --data_path [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [CHECKPOINT] --batch_size [BATCH_SIZE] --gpu_nums [YOUR_GPU_NUMS]
 ```
 **Arguments**
-- `--datapath`: your dataset path | default: datasets/
+- `--datapath`: your dataset path | default: None
 - `--epochs`: number of epochs to train | default: 40
 - `--checkpoint`: number of epochs to making checkpoint | default: 5
 - `--batch_size`: number of batch size to train | default: 1
 - `--gpu_nums`: number of gpus to train | default: 1
-- `--seed`: random seed (default: 1) | default: 1
 
 **Example**
 ```
-python train.py --data_path kitti_dataset/ --epochs 50 --checkpoint 10 --batch_size 64 --gpu_nums 4 --seed 23
+python train.py --data_path datasets/ --epochs 40 --batch_size 16 --gpu_nums 4
 ```
 
 ### Demo
 ```
-python demo.py --model_path [YOUR_MODEL_PATH] --image_path [YOUR_IMAGE_PATH] --sparse_path [YOUR_POINT_PATH] --pseudo_depth_map_path [YOUR_PSEUDO_MAP_PATH] --output_path [YOUR_SAVE_PATH]
+python demo.py --model_path [YOUR_MODEL_PATH] --image_path [YOUR_IMAGE_PATH] --sparse_path [YOUR_LIDAR_POINT_PATH] --pseudo_depth_map_path [YOUR_PSEUDO_DEPTH_MAP_PATH] --output_path [YOUR_SAVE_PATH]
 ```
 **Arguments**
 - `--model_path`: your model path | default: None
 - `--image_path`: your raw image path | default: demo/demo_image.png
 - `--sparse_path`: your raw lidar path | default: demo/demo_velodyne.png
-- `--pseudo_depth_map_path`: your pseudo depth map path | default: demo/demo_paseudo_depth.png
+- `--pseudo_depth_map_path`: your pseudo depth map path | default: demo/demo_pseudo_depth.png
 - `--output_path`: your save result path | default: demo/dense_depth_output.png
 
-
-
-### Running
-- Placeholder
-
-<details>
-  <summary><h3>Our Variation Samples</h3></summary>
-  ## Basic DenseLiDAR Architecture
-<img width="1303" alt="image" src="https://github.com/user-attachments/assets/4401a6aa-e52c-4239-bf95-16cd1e204443">
-
-### 1. Add SAM from Basic DenseLiDAR
-<img width="1294" alt="image" src="https://github.com/user-attachments/assets/7363b40e-925b-419e-b7f6-a303e3b229f9">
-
-
-### 2. SAM + Depth Anything V2
-- Add SAM for image guidance and Depth Anything V2 for self-supervised Learning
-<img width="1139" alt="image" src="https://github.com/user-attachments/assets/e592d467-fe25-495d-8325-01cd20356708">
-
-### 3. Raw LiDAR + SAM + Depth Anything V2
-- Remove IP_Basic and rectify_depth
-- Add SAM for image guidance and Depth Anything V2 for self-supervised Learning
-<img width="622" alt="image" src="https://github.com/user-attachments/assets/6a6effb8-652c-4e60-b077-1d0a0ecb3374">
-
-### 4. Simple version using Depth Anything V2 without SAM
-<img width="1076" alt="image" src="https://github.com/user-attachments/assets/6368c662-5c2d-43ef-9cbd-e72a10833bc4">
-
-### 5. Using DeepLiDAR
-<img width="1078" alt="image" src="https://github.com/user-attachments/assets/39ae55a2-4c6d-48ff-836a-da804f8cd78d">
-
-
-</details>
+**Example**
+```
+python demo.py --model_path checkpoint/epoch-5_loss-3.273.tar --image_path demo/demo_image.png --sparse_path demo/demo_velodyne.png --pseudo_depth_map_path demo/demo_pseudo_depth.png --output_path demo/dense_depth_output.png
+```
