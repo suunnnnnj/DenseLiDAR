@@ -1,12 +1,12 @@
 # A Real-time Pseudo Dense Depth Guided Depth Completion Network(Non-official)
-This repo is non-offical implement of paper : [DenseLiDAR: A Real-time Pseudo Dense Depth Guided Depth Completion Network](https://arxiv.org/pdf/2108.12655)
+This repo is non-offical implementaton of paper : [DenseLiDAR: A Real-time Pseudo Dense Depth Guided Depth Completion Network](https://arxiv.org/pdf/2108.12655)
 > Jiaqi Gu. et al, DenseLiDAR: A Real-Time Pseudo Dense Depth Guided Depth Completion Network. ICRA2021
 
 We would like to thank Jiaqi Gu et al. for their groundbreaking work on DenseLiDAR. This implementation was inspired by their paper presented at ICRA 2021. Additionally, we appreciate the contributions of the open-source community and the resources provided by [PyTorch](https://pytorch.org/).
 ### This project was conducted as part of the Internship program at Mobiltech and Gachon University VIPlab.
 
 - Implementation by. 구도연, 김다혜, 조재현 [[VIPlab Gachon University.](https://sites.google.com/view/vip-lab)]
-- Project Supervision : 정선재 [[Mobiltech](https://www.mobiltech.io/)]
+- Project Supervision : 정선재 [[Mobiltech.](https://www.mobiltech.io/)]
 
 ## Disclaimer
 
@@ -14,7 +14,13 @@ Please note that this implementation is not the official code provided by the au
 
 
 ## DenseLiDAR Architecture
+![Screenshot from 2024-07-30 14-20-04](https://github.com/user-attachments/assets/ac04090d-93b6-44b8-8a18-276f0186e555)
 <img width="1173" alt="image" src="https://github.com/user-attachments/assets/4401a6aa-e52c-4239-bf95-16cd1e204443">
+
+## DenseLiDAR Depth Completion Results on paper
+> Please note that the ours implementation is not the same.
+![res](https://github.com/user-attachments/assets/eeba8406-866a-4caf-8764-37b5619d66eb)
+
 
 ## Requirements
 - Ubuntu 20.04 LTS
