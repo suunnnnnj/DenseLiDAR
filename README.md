@@ -1,4 +1,4 @@
-# A Real-time Pseudo Dense Depth Guided Depth Completion Network
+# A Real-time Pseudo Dense Depth Guided Depth Completion Network(Non-official)
 This repo is non-offical implement of paper : [DenseLiDAR: A Real-time Pseudo Dense Depth Guided Depth Completion Network](https://arxiv.org/pdf/2108.12655)
 > Jiaqi Gu. et al, DenseLiDAR: A Real-Time Pseudo Dense Depth Guided Depth Completion Network. ICRA2021
 
