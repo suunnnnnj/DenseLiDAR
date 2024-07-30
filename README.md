@@ -1,12 +1,19 @@
-# Self-Supervised Depth Completion
-Mobiltech-Gachon PJ for the month
+# A Real-time Pseudo Dense Depth Guided Depth Completion Network
+This repo is non-offical implement of paper : [DenseLiDAR: A Real-time Pseudo Dense Depth Guided Depth Completion Network](https://arxiv.org/pdf/2108.12655)
+> Jiaqi Gu. et al, DenseLiDAR: A Real-Time Pseudo Dense Depth Guided Depth Completion Network. ICRA2021
+
+We would like to thank Jiaqi Gu et al. for their groundbreaking work on DenseLiDAR. This implementation was inspired by their paper presented at ICRA 2021. Additionally, we appreciate the contributions of the open-source community and the resources provided by [PyTorch](https://pytorch.org/).
+
+- Implementation by. 구도연, 김다혜, 조재현 [[VIPlab Gachon University.](https://sites.google.com/view/vip-lab)]
+- Project Supervision : 정선재 [[Mobiltech](https://www.mobiltech.io/)]
+
+## Disclaimer
+
+Please note that this implementation is not the official code provided by the authors of the paper. As such, the performance metrics obtained using our code may differ from those reported in the original paper. Differences in implementation details, parameter settings, and hardware can all contribute to variations in performance.
 
 
-## Target Architecture
-<img width="1173" alt="image" src="https://github.com/user-attachments/assets/74fd3a33-5b4e-4949-be80-1177079d8825">
-
-- For using raw image input and SAM result simultaneously.
-- `dcu(dcu(guided_LiDAR + raw_image) + dcu(raw_LiDAR + guided_image)) `
+## DenseLiDAR Architecture
+<img width="1173" alt="image" src="https://github.com/user-attachments/assets/4401a6aa-e52c-4239-bf95-16cd1e204443">
 
 ## Requirements
 - Ubuntu 20.04 LTS
@@ -84,31 +91,3 @@ python demo.py --model_path [YOUR_MODEL_PATH] --image_path [YOUR_IMAGE_PATH] --s
 ```
 python demo.py --model_path checkpoint/epoch-5_loss-3.273.tar --image_path demo/demo_image.png --sparse_path demo/demo_velodyne.png --pseudo_depth_map_path demo/demo_pseudo_depth.png --output_path demo/dense_depth_output.png
 ```
-
-<details>
-  <summary><h3>Our Variation Samples</h3></summary>
-      
-## Basic DenseLiDAR Architecture
-<img width="1303" alt="image" src="https://github.com/user-attachments/assets/4401a6aa-e52c-4239-bf95-16cd1e204443">
-
-### 1. Add SAM from Basic DenseLiDAR
-<img width="1294" alt="image" src="https://github.com/user-attachments/assets/7363b40e-925b-419e-b7f6-a303e3b229f9">
-
-
-### 2. SAM + Depth Anything V2
-- Add SAM for image guidance and Depth Anything V2 for self-supervised Learning
-<img width="1139" alt="image" src="https://github.com/user-attachments/assets/e592d467-fe25-495d-8325-01cd20356708">
-
-### 3. Raw LiDAR + SAM + Depth Anything V2
-- Remove IP_Basic and rectify_depth
-- Add SAM for image guidance and Depth Anything V2 for self-supervised Learning
-<img width="622" alt="image" src="https://github.com/user-attachments/assets/6a6effb8-652c-4e60-b077-1d0a0ecb3374">
-
-### 4. Simple version using Depth Anything V2 without SAM
-<img width="1076" alt="image" src="https://github.com/user-attachments/assets/6368c662-5c2d-43ef-9cbd-e72a10833bc4">
-
-### 5. Using DeepLiDAR
-<img width="1078" alt="image" src="https://github.com/user-attachments/assets/39ae55a2-4c6d-48ff-836a-da804f8cd78d">
-
-
-</details>
