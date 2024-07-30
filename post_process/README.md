@@ -24,10 +24,6 @@ python post_process.py
 
 ### Result
 
-**no enhance**
-![image](https://github.com/user-attachments/assets/6d3d0fc2-cbe5-4fba-a63d-1f74753b4373)
-
-**enhance**
 ![post_processing_depth_enhance](https://github.com/user-attachments/assets/cc0ad1ee-fff9-4844-8424-3eaf1864a8de)
 
 ## 3D visualization
