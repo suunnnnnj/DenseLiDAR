@@ -100,3 +100,24 @@ python demo.py --model_path [YOUR_MODEL_PATH] --image_path [YOUR_IMAGE_PATH] --s
 ```
 python demo.py --model_path checkpoint/epoch-5_loss-3.273.tar --image_path demo/demo_image.png --sparse_path demo/demo_velodyne.png --pseudo_depth_map_path demo/demo_pseudo_depth.png --output_path demo/dense_depth_output.png
 ```
+## Acknowledgements
+
+We would like to express our sincere gratitude to the creators of the [DeepLiDAR](https://github.com/JiaxiongQ/DeepLiDAR) project. Their work provided a valuable foundation for our project and significantly contributed to its development. Without their open-source contribution, this project would not have been possible.
+
+Additionally, we would like to thank the authors of the [DenseLiDAR](https://arxiv.org/pdf/2108.12655) paper. Our code is a non-official implementation based on their groundbreaking research. Their innovative work has been instrumental in the advancement of this field and has greatly inspired our efforts.
+
+Thank you all for your outstanding contributions and dedication to the open-source and research communities.
+## Citation
+If you use our implementation or method in your work. please cite the following
+```
+@ARTICLE{9357967,
+  author={Gu, Jiaqi and Xiang, Zhiyu and Ye, Yuwen and Wang, Lingxuan},
+  journal={IEEE Robotics and Automation Letters}, 
+  title={DenseLiDAR: A Real-Time Pseudo Dense Depth Guided Depth Completion Network}, 
+  year={2021},
+  volume={6},
+  number={2},
+  pages={1808-1815},
+  keywords={Three-dimensional displays;Task analysis;Measurement;Laser radar;Real-time systems;Training;Object detection;Deep learning for visual perception;RGB-D perception;recognition},
+  doi={10.1109/LRA.2021.3060396}}
+```
