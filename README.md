@@ -1,16 +1,17 @@
 # A Real-time Pseudo Dense Depth Guided Depth Completion Network(Non-official)
-This repo is non-offical implementaton of paper : [DenseLiDAR: A Real-time Pseudo Dense Depth Guided Depth Completion Network](https://arxiv.org/pdf/2108.12655)
-> Jiaqi Gu. et al, DenseLiDAR: A Real-Time Pseudo Dense Depth Guided Depth Completion Network. ICRA2021
+This repository provides a non-official implementation of the paper:[DenseLiDAR: A Real-time Pseudo Dense Depth Guided Depth Completion Network](https://arxiv.org/pdf/2108.12655)
+> **Jiaqi Gu. et al, DenseLiDAR: A Real-Time Pseudo Dense Depth Guided Depth Completion Network. ICRA2021**
 
-We would like to thank Jiaqi Gu et al. for their groundbreaking work on DenseLiDAR. This implementation was inspired by their paper presented at ICRA 2021. Additionally, we appreciate the contributions of the open-source community and the resources provided by [PyTorch](https://pytorch.org/).
-### This project was conducted as part of the Internship program at Mobiltech and Gachon University VIPlab.
+We express our gratitude to Jiaqi Gu et al. for their groundbreaking work on DenseLiDAR. This implementation is inspired by their paper presented at ICRA 2021. We also appreciate the contributions of the open-source community and the resources provided by [PyTorch](https://pytorch.org/).
 
-- Implementation by. 구도연, 김다혜, 조재현 [[VIPlab Gachon University.](https://sites.google.com/view/vip-lab)]
+**This project was conducted as part of the Internship program at Mobiltech and VIP-Lab at Gachon University.**
+
+- Implementation by : 구도연, 김다혜, 조재현 [[VIP-Lab at Gachon University.](https://sites.google.com/view/vip-lab)]
 - Project Supervision : 정선재 [[Mobiltech.](https://www.mobiltech.io/)]
 
 ## Disclaimer
 
-Please note that this implementation is not the official code provided by the authors of the paper. As such, the performance metrics obtained using our code may differ from those reported in the original paper. Differences in implementation details, parameter settings, and hardware can all contribute to variations in performance.
+Please note that this implementation is not the official code provided by the authors of the paper. Therefore, performance metrics obtained using our code may differ from those reported in the original paper due to differences in implementation details, parameter settings, and hardware.
 
 
 ## DenseLiDAR Architecture
@@ -18,11 +19,11 @@ Please note that this implementation is not the official code provided by the au
 <img width="1173" alt="image" src="https://github.com/user-attachments/assets/4401a6aa-e52c-4239-bf95-16cd1e204443">
 
 ## DenseLiDAR Depth Completion Results on paper
-> Please note that the ours implementation is not the same.
+> **Note: Our implementation results are not the same.**
 
 ![res](https://github.com/user-attachments/assets/eeba8406-866a-4caf-8764-37b5619d66eb)
 
-You can check our implementation result of Depth completion/3D Visualization on [this link](https://github.com/suunnnnnj/DenseLiDAR/tree/main/post_process#post-processing--3d-visualization)
+You can check our implementation results of Depth completion/3D Visualization on [this link](https://github.com/suunnnnnj/DenseLiDAR/tree/main/post_process#post-processing--3d-visualization)
 
 ## Requirements
 - Ubuntu 20.04 LTS
@@ -102,11 +103,11 @@ python demo.py --model_path checkpoint/epoch-5_loss-3.273.tar --image_path demo/
 ```
 ## Acknowledgements
 
-We would like to express our sincere gratitude to the creators of the [DeepLiDAR](https://github.com/JiaxiongQ/DeepLiDAR) project. Their work provided a valuable foundation for our project and significantly contributed to its development. Without their open-source contribution, this project would not have been possible.
-
-Additionally, we would like to thank the authors of the [DenseLiDAR](https://arxiv.org/pdf/2108.12655) paper. Our code is a non-official implementation based on their groundbreaking research. Their innovative work has been instrumental in the advancement of this field and has greatly inspired our efforts.
+We express our sincere gratitude to the creators of the [DeepLiDAR](https://github.com/JiaxiongQ/DeepLiDAR) project. Their work provided a valuable foundation for our project. 
+Additionally, we thank the authors of the [DenseLiDAR](https://arxiv.org/pdf/2108.12655) paper. Our code is a non-official implementation based on their research.
 
 Thank you all for your outstanding contributions and dedication to the open-source and research communities.
+
 ## Citation
 If you use our implementation or method in your work. please cite the following
 ```
