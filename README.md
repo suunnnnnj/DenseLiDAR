@@ -6,7 +6,7 @@ We express our gratitude to Jiaqi Gu et al. for their groundbreaking work on Den
 
 **This project was conducted as part of the Internship program at Mobiltech and VIP-Lab at Gachon University.**
 
-- Implementation by : 구도연, 김다혜, 조재현 [[VIP-Lab at Gachon University.](https://sites.google.com/view/vip-lab)]
+- Implementation by : **구도연, 김다혜, 조재현** [[VIP-Lab at Gachon University.](https://sites.google.com/view/vip-lab)]
 - Project Supervision : 정선재 [[Mobiltech.](https://www.mobiltech.io/)]
 
 ## Disclaimer
