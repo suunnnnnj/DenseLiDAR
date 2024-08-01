@@ -207,7 +207,6 @@ def main(rank, world_size, args):
         print('Epoch %d validation structural loss = %.10f, validation depth loss = %.10f' % (epoch, avg_val_s_loss, avg_val_d_loss))
         print()
         
-        # Logging to TensorBoard
         if rank == 0:
             writer.add_scalars('Loss', {
                 'train_total_loss': avg_train_loss,
@@ -244,7 +243,6 @@ def main(rank, world_size, args):
         print(f'The best model is saved at: {best_model_path}\n')
 
     cleanup()
-
 
     writer.close()
 
