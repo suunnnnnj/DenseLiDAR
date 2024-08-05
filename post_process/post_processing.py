@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import os
+
 
 def load_depth_image(path):
     # Load depth image with any depth
@@ -7,7 +9,7 @@ def load_depth_image(path):
 
     if depth_image is None:
         raise FileNotFoundError(f"Image at path {path} not found.")
-    
+
     depth_image = depth_image.astype(np.float32) / 256.0
 
     return depth_image
@@ -19,7 +21,7 @@ def calculate_rmse(predicted_depth, pseudo_depth, outlier_mask):
 
     if np.sum(valid_points) == 0:
         return np.nan
-    
+
     rmse = np.sqrt(np.nanmean((predicted_depth[valid_points] - pseudo_depth[valid_points]) ** 2))
 
     return rmse
@@ -40,7 +42,7 @@ def remove_outliers(predicted_depth, pseudo_depth):
         range_mask = (pseudo_depth <= max_depth)
         outlier_condition = (depth_difference > threshold)
         outlier_mask |= outlier_condition & range_mask
-        
+
         num_outliers = np.sum(outlier_condition & range_mask)
         print(f"Threshold: {threshold} | Max Depth: {max_depth} | Outliers in range: {num_outliers}")
 
@@ -84,8 +86,13 @@ def main(predicted_depth_path, pseudo_depth_path):
     cv2.imwrite(post_processing_depth_path, post_processing_depth)
     print(f"Post processing depth image saved to {post_processing_depth_path}")
 
+    import matplotlib.pyplot as plt
+    plt.imshow(post_processing_depth, 'gray')
+    plt.show()
 
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 # Example usage
-predicted_depth_path = 'dense_depth_output.png'
-pseudo_depth_path = 'demo_pseudo_depth.png'
+predicted_depth_path = os.path.join(dir_path, 'dense_depth_output.png')
+pseudo_depth_path = os.path.join(dir_path, 'demo_pseudo_depth.png')
 main(predicted_depth_path, pseudo_depth_path)

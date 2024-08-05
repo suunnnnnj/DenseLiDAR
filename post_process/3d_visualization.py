@@ -18,8 +18,8 @@ R = np.array([
 T = np.array([-4.069766e-03, -7.631618e-02, -2.717806e-01])
 
 # Paths to depth and color images
-depth_image_path = '/home/mobiltech/SSDC/post_process/post_processing_depth.png'
-color_image_path = '/home/mobiltech/SSDC/demo/demo_image.png'
+depth_image_path = '/home/mobiltech/Desktop/DenseLiDAR/post_process/post_processing_depth.png'
+color_image_path = '/home/mobiltech/Desktop/DenseLiDAR/demo/demo_image.png'
 
 # Load the depth and color images
 depth_image = cv2.imread(depth_image_path, cv2.IMREAD_GRAYSCALE)

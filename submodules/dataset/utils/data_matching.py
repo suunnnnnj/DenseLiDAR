@@ -42,33 +42,41 @@ def matching_sync(root_dir, image_train_list, image_val_list):
                     folder_path = os.path.join(sync_dir, folder)
                     shutil.rmtree(folder_path)
 
-    return 0
-
-def matching_file_dir(src_base_path, dest_base_path):
+def matching_file_dir(root_dir):
     # Iterate through all subfolders in the source base path
-    for folder_name in os.listdir(src_base_path):
-        src_path1 = os.path.join(src_base_path, folder_name, 'image_02/data')
-        dest_path2 = os.path.join(dest_base_path, folder_name, 'image_02')
+    pos_list = ['image_02', 'image_03'] # left / right
+    mode_list = ['train', 'val']
 
-        # Ensure the source directory exists
-        if not os.path.exists(src_path1):
-            print(f"Source path does not exist: {src_path1}")
-            continue
-
+    for folder_name in os.listdir(root_dir):
         # Ensure the destination directory exists
-        os.makedirs(dest_path2, exist_ok=True)
-
         # Move files from the current source folder to the corresponding destination folder
-        for file_name in os.listdir(src_path1):
-            full_file_name = os.path.join(src_path1, file_name)
-            if os.path.isfile(full_file_name):
-                shutil.move(full_file_name, dest_path2)
-                print(f'Moved {full_file_name} to {dest_path2}')
+        for mode in mode_list:
+            for sync in os.listdir(os.path.join(root_dir, folder_name, mode)):
+                for pos in pos_list:
+                    path = os.path.join(root_dir, folder_name, mode, sync, 'proj_depth')
+                    if folder_name != 'kitti_raw':
+                        src_path = os.path.join(path, os.listdir(path)[0], pos)
+                        dest_path = os.path.join(path, pos)
+                        os.makedirs(dest_path, exist_ok=True)
+                        print(src_path)
+                        print(dest_path)
+                    elif folder_name== 'kitti_raw':
+                        '''src_path = os.path.join(path, os.listdir(path)[0], pos)
+                        dest_path = os.path.join(path, pos)
+                        os.makedirs(dest_path, exist_ok=True)
+                        print(src_path)
+                        print(dest_path)'''
 
-        # Remove the source directory after moving the files
-        if os.path.exists(src_path1) and not os.listdir(src_path1):
-            os.rmdir(src_path1)
-            print(f'Deleted empty source folder: {src_path1}')
-        else:
-            print(f"Source folder not empty, can't delete: {src_path1}")
+                        continue
+                    for file_name in src_path:
+                        full_file_name = os.listdir(os.path.join(src_path, file_name))
+                        print(full_file_name)
+                        if os.path.isfile(full_file_name):
+                            shutil.move(full_file_name, dest_path)
 
+            # Remove the source directory after moving the files
+            '''if os.path.exists(src_path) and not os.listdir(src_path):
+                os.rmdir(src_path)
+                print(f'Deleted empty source folder: {src_path}')
+            else:
+                print(f"Source folder not empty, can't delete: {src_path}")'''
