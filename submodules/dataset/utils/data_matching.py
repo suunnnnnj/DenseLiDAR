@@ -2,10 +2,7 @@ import os
 import shutil
 from tqdm import tqdm
 
-root_dir = '/home/research1/Desktop/gachon/SSDC/datasets'
-
-
-train_dir = os.path.join(root_dir, 'kitti_raw/train')
+'''train_dir = os.path.join(root_dir, 'kitti_raw/train')
 val_dir = os.path.join(root_dir, 'kitti_raw/val')
 
 train_list = os.listdir(train_dir)
@@ -25,13 +22,33 @@ for data_folder in tqdm(folder_list):
     val_list = os.listdir(current_dir) # other folder's val list
     for dir in val_list:
         if not os.path.exists(os.path.join(val_dir, dir)):
-            shutil.rmtree(os.path.join(current_dir, dir))
+            shutil.rmtree(os.path.join(current_dir, dir))'''
 
-def matching_file_path(src_base_path, dest_base_path):
+def matching_sync(root_dir, image_train_list, image_val_list):
+    fold_list = ['data_depth_annotated', 'data_depth_velodyne']
+    for fold in fold_list:
+        for dir in ['train', 'val']:
+            print(f'remove in {fold}/{dir} not in kitti_raw')
+            sync_dir = os.path.join(root_dir, fold, dir)
+            sync_list = os.listdir(sync_dir)
+
+            if dir == 'train':
+                reference_list = image_train_list
+            else:
+                reference_list = image_val_list
+
+            for folder in sync_list:
+                if folder not in reference_list:
+                    folder_path = os.path.join(sync_dir, folder)
+                    shutil.rmtree(folder_path)
+
+    return 0
+
+def matching_file_dir(src_base_path, dest_base_path):
     # Iterate through all subfolders in the source base path
     for folder_name in os.listdir(src_base_path):
         src_path1 = os.path.join(src_base_path, folder_name, 'image_02/data')
-        dest_path2 = os.path.join(dest_base_path, folder_name, 'proj_depth/image_02')
+        dest_path2 = os.path.join(dest_base_path, folder_name, 'image_02')
 
         # Ensure the source directory exists
         if not os.path.exists(src_path1):
@@ -54,3 +71,4 @@ def matching_file_path(src_base_path, dest_base_path):
             print(f'Deleted empty source folder: {src_path1}')
         else:
             print(f"Source folder not empty, can't delete: {src_path1}")
+
