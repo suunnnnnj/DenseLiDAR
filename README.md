@@ -21,9 +21,20 @@ Please note that this implementation is not the official code provided by the au
 ## DenseLiDAR Depth Completion Results on paper
 > **Note: Our implementation results are not the same.**
 
-![res](https://github.com/user-attachments/assets/eeba8406-866a-4caf-8764-37b5619d66eb)
+<img src="https://github.com/user-attachments/assets/eeba8406-866a-4caf-8764-37b5619d66eb" width="900"/>
 
+### Our Results
 You can check our implementation results of Depth Completion/3D Visualization on [this link](https://github.com/suunnnnnj/DenseLiDAR/tree/main/post_process#post-processing--3d-visualization)
+
+**Predictions**
+
+<img src="https://github.com/user-attachments/assets/a90ffddf-8eca-426e-9203-5beb495458d6" width="900" />
+
+**3D Visualizations**
+
+<img src="https://github.com/user-attachments/assets/700b1686-09c1-4fef-906f-d5731c97cb68" alt="Image Description" width="500"/>
+
+
 
 ## Requirements
 - Ubuntu 20.04 LTS
