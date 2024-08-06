@@ -1,5 +1,8 @@
 import cv2
 import numpy as np
+import os
+import matplotlib.pyplot as plt
+
 
 def load_depth_image(path):
     # Load depth image with any depth
@@ -7,7 +10,7 @@ def load_depth_image(path):
 
     if depth_image is None:
         raise FileNotFoundError(f"Image at path {path} not found.")
-    
+
     depth_image = depth_image.astype(np.float32) / 256.0
 
     return depth_image
@@ -19,7 +22,7 @@ def calculate_rmse(predicted_depth, pseudo_depth, outlier_mask):
 
     if np.sum(valid_points) == 0:
         return np.nan
-    
+
     rmse = np.sqrt(np.nanmean((predicted_depth[valid_points] - pseudo_depth[valid_points]) ** 2))
 
     return rmse
@@ -30,7 +33,8 @@ def remove_outliers(predicted_depth, pseudo_depth):
     depth_difference = np.abs(predicted_depth - pseudo_depth)
 
     # Threshold settings [(max_distance,threshold)]
-    thresholds = [(10, 0.07), (30, 0.08), (np.inf, 0.1)]
+    #thresholds = [(10, 0.07), (30, 0.08), (np.inf, 0.1)]
+    thresholds = [(10, 0.1), (40, 0.3), (np.inf, 0.5)]
 
     # Create outlier mask
     outlier_mask = np.zeros_like(depth_difference, dtype=bool)
@@ -40,7 +44,7 @@ def remove_outliers(predicted_depth, pseudo_depth):
         range_mask = (pseudo_depth <= max_depth)
         outlier_condition = (depth_difference > threshold)
         outlier_mask |= outlier_condition & range_mask
-        
+
         num_outliers = np.sum(outlier_condition & range_mask)
         print(f"Threshold: {threshold} | Max Depth: {max_depth} | Outliers in range: {num_outliers}")
 
@@ -53,6 +57,11 @@ def remove_outliers(predicted_depth, pseudo_depth):
 def print_unique_values(image, image_name):
     unique_values = np.unique(image)
     print(f"Unique values in {image_name}: {unique_values}")
+
+def edge_detection(img_path):
+    img = cv2.imread(img_path)
+    canny = cv2.Canny(img, 1, 20)
+    return canny
 
 
 def main(predicted_depth_path, pseudo_depth_path):
@@ -80,12 +89,18 @@ def main(predicted_depth_path, pseudo_depth_path):
     print(f"Percentage of points retained: {retained_percentage:.2f}%")
 
     # Save post processing depth
+    edge = edge_detection(predicted_depth_path)
+    print_unique_values(post_processing_depth, "post_processing_depth")
+
     post_processing_depth_path = "post_processing_depth.png"
+    post_processing_depth = np.where(edge == 255, np.nan, post_processing_depth)
     cv2.imwrite(post_processing_depth_path, post_processing_depth)
+    depth_image = plt.imread(post_processing_depth_path)
+    plt.imsave('post_processing_depth.png', depth_image, cmap='bwr')
     print(f"Post processing depth image saved to {post_processing_depth_path}")
 
-
+dir_path = os.path.dirname(os.path.realpath(__file__))
 # Example usage
-predicted_depth_path = 'dense_depth_output.png'
-pseudo_depth_path = 'demo_pseudo_depth.png'
+predicted_depth_path = os.path.join(dir_path, 'dense_depth_output.png')
+pseudo_depth_path = os.path.join(dir_path, 'demo_pseudo_depth.png')
 main(predicted_depth_path, pseudo_depth_path)

@@ -18,7 +18,7 @@ R = np.array([
 T = np.array([-4.069766e-03, -7.631618e-02, -2.717806e-01])
 
 # Paths to depth and color images
-depth_image_path = '/home/mobiltech/SSDC/post_process/post_processing_depth.png'
+depth_image_path = 'post_process/post_processing_depth.png'
 color_image_path = '/home/mobiltech/SSDC/demo/demo_image.png'
 
 # Load the depth and color images
