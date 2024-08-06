@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 
 def load_depth_image(path):
@@ -32,7 +33,8 @@ def remove_outliers(predicted_depth, pseudo_depth):
     depth_difference = np.abs(predicted_depth - pseudo_depth)
 
     # Threshold settings [(max_distance,threshold)]
-    thresholds = [(10, 0.07), (30, 0.08), (np.inf, 0.1)]
+    #thresholds = [(10, 0.07), (30, 0.08), (np.inf, 0.1)]
+    thresholds = [(10, 0.1), (40, 0.3), (np.inf, 0.5)]
 
     # Create outlier mask
     outlier_mask = np.zeros_like(depth_difference, dtype=bool)
@@ -55,6 +57,11 @@ def remove_outliers(predicted_depth, pseudo_depth):
 def print_unique_values(image, image_name):
     unique_values = np.unique(image)
     print(f"Unique values in {image_name}: {unique_values}")
+
+def edge_detection(img_path):
+    img = cv2.imread(img_path)
+    canny = cv2.Canny(img, 1, 20)
+    return canny
 
 
 def main(predicted_depth_path, pseudo_depth_path):
@@ -82,14 +89,13 @@ def main(predicted_depth_path, pseudo_depth_path):
     print(f"Percentage of points retained: {retained_percentage:.2f}%")
 
     # Save post processing depth
-    post_processing_depth_path = "post_processing_depth.png"
+    edge = edge_detection(predicted_depth_path)
+    print_unique_values(post_processing_depth, "post_processing_depth")
+
+    post_processing_depth_path = "post_processing_depth_with_edge.png"
+    post_processing_depth = np.where(edge == 255, np.nan, post_processing_depth)
     cv2.imwrite(post_processing_depth_path, post_processing_depth)
     print(f"Post processing depth image saved to {post_processing_depth_path}")
-
-    import matplotlib.pyplot as plt
-    plt.imshow(post_processing_depth, 'gray')
-    plt.show()
-
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 # Example usage
