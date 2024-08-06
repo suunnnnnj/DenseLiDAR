@@ -47,6 +47,8 @@ color_image_path = '/home/mobiltech/SSDC/demo/demo_image.png'
 python 3d_visualization.py
 ```
 ### Result
+![Screenshot from 2024-08-06 14-15-53](https://github.com/user-attachments/assets/d5c01af9-9c5e-4a82-82d1-b8281175b733)
+![Screenshot from 2024-08-06 14-16-11](https://github.com/user-attachments/assets/3d3cc7f7-d0c0-4d68-b6e4-8478b73ec1ee)
 
-![Screenshot from 2024-07-30 15-58-49](https://github.com/user-attachments/assets/7c1151c1-2bb8-4cc7-a348-06a86f318f38)
+
 
