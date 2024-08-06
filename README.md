@@ -28,7 +28,7 @@ You can check our implementation results of Depth Completion/3D Visualization on
 
 **Predictions**
 
-<img src="https://github.com/user-attachments/assets/a90ffddf-8eca-426e-9203-5beb495458d6" width="900" />
+<img src="https://github.com/user-attachments/assets/9718bb71-ea80-4406-88fc-2a0b966ef76a" width="900" />
 
 **3D Visualizations**
 
