@@ -5,6 +5,7 @@ import time
 import cv2
 import numpy as np
 import png
+from tqdm import tqdm
 
 from utils.depth_map_utils import fill_in_fast
 
@@ -21,9 +22,6 @@ def ip_basic(path, outputs_dir):
     extrapolate = False
     blur_type = 'gaussian'
     # Save output to disk or show process
-    save_output = True
-
-    show_process = False
     save_depth_maps = True
 
     os.makedirs(outputs_dir, exist_ok=True)
@@ -45,22 +43,8 @@ def ip_basic(path, outputs_dir):
     last_total_times = np.repeat([1.0], avg_time_arr_length)
 
     num_images = len(images_to_use)
-    for i in range(num_images):
+    for i in tqdm(range(num_images)):
         depth_image_path = images_to_use[i]
-        print(depth_image_path)
-
-        # Calculate average time with last n fill times
-        avg_fill_time = np.mean(last_fill_times)
-        avg_total_time = np.mean(last_total_times)
-
-        # Show progress
-        sys.stdout.write('\rProcessing {} / {}, '
-                         'Avg Fill Time: {:.5f}s, '
-                         'Avg Total Time: {:.5f}s, '
-                         'Est Time Remaining: {:.3f}s\n'.format(
-                             i, num_images - 1, avg_fill_time, avg_total_time,
-                             avg_total_time * (num_images - i)))
-        sys.stdout.flush()
 
         # Start timing
         start_total_time = time.time()

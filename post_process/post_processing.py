@@ -93,6 +93,7 @@ def main(predicted_depth_path, pseudo_depth_path):
     print_unique_values(post_processing_depth, "post_processing_depth")
 
     post_processing_depth_path = "post_processing_depth.png"
+  
     post_processing_depth = np.where(edge == 255, np.nan, post_processing_depth)
     cv2.imwrite(post_processing_depth_path, post_processing_depth)
     depth_image = plt.imread(post_processing_depth_path)
