@@ -1,8 +1,3 @@
-"""
-Argument : data path, epochs, checkpoint, batch size, gpu nums, etc.
-Example : python train.py --data_path datasets/ --epochs 40 --batch_size 16 --gpu_nums 4 --patience 15
-"""
-
 import argparse
 import os
 import torch
@@ -18,6 +13,7 @@ from dataloader import trainLoader as DA
 from model import DenseLiDAR
 from submodules.loss.total_loss import total_loss
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -113,6 +109,8 @@ def main(rank, world_size, args):
     setup(rank, world_size, args.master_addr, args.master_port)
     torch.cuda.set_device(rank)
 
+    writer = SummaryWriter()
+
     train_image, train_sparse, train_gt, train_pseudo_depth_map, train_pseudo_gt_map = lsn.dataloader(args.data_path, mode='train')
     val_image, val_sparse, val_gt, val_pseudo_depth_map, val_pseudo_gt_map = lsn.dataloader(args.data_path, mode='val')
 
@@ -183,8 +181,12 @@ def main(rank, world_size, args):
             total_train_s_loss += train_s_loss
             total_train_d_loss += train_d_loss
             
-        print('Epoch %d total training loss = %.10f' % (epoch, total_train_loss / len(TrainImgLoader)))
-        print('Epoch %d training structural loss = %.10f, training depth loss = %.10f' % (epoch, total_train_s_loss / len(TrainImgLoader), total_train_d_loss / len(TrainImgLoader)))
+        avg_train_loss = total_train_loss / len(TrainImgLoader)
+        avg_train_s_loss = total_train_s_loss / len(TrainImgLoader)
+        avg_train_d_loss = total_train_d_loss / len(TrainImgLoader)
+
+        print('Epoch %d total training loss = %.10f' % (epoch, avg_train_loss))
+        print('Epoch %d training structural loss = %.10f, training depth loss = %.10f' % (epoch, avg_train_s_loss, avg_train_d_loss))
         print()
 
         ## validation ##
@@ -198,10 +200,22 @@ def main(rank, world_size, args):
             total_val_d_loss += val_d_loss
 
         avg_val_loss = total_val_loss / len(ValImgLoader)
+        avg_val_s_loss = total_val_s_loss / len(ValImgLoader)
+        avg_val_d_loss = total_val_d_loss / len(ValImgLoader)
 
         print('Epoch %d total validation loss = %.10f' % (epoch, avg_val_loss))
-        print('Epoch %d validation structural loss = %.10f, validation depth loss = %.10f' % (epoch, total_val_s_loss / len(ValImgLoader), total_val_d_loss / len(ValImgLoader)))
+        print('Epoch %d validation structural loss = %.10f, validation depth loss = %.10f' % (epoch, avg_val_s_loss, avg_val_d_loss))
         print()
+        
+        if rank == 0:
+            writer.add_scalars('Loss', {
+                'train_total_loss': avg_train_loss,
+                'train_structural_loss': avg_train_s_loss,
+                'train_depth_loss': avg_train_d_loss,
+                'val_total_loss': avg_val_loss,
+                'val_structural_loss': avg_val_s_loss,
+                'val_depth_loss': avg_val_d_loss
+            }, epoch)
         
         scheduler.step()
 
@@ -229,6 +243,8 @@ def main(rank, world_size, args):
         print(f'The best model is saved at: {best_model_path}\n')
 
     cleanup()
+
+    writer.close()
 
 
 if __name__ == '__main__':
