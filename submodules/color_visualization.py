@@ -23,9 +23,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-depthmap_path = "/home/mobiltech/Desktop/main/DenseLiDAR/demo/dense_depth_output.png" # depth image가 아닐 경우 / 3채널 이미지일 경우 에러
+depthmap_path = "/home/mobiltech/Desktop/main/DenseLiDAR/post_process/post_processing_depth.png" # depth image가 아닐 경우 / 3채널 이미지일 경우 에러
+# pseudo_path   = "/home/mobiltech/Desktop/main/DenseLiDAR/demo/demo_pseudo_depth.png"
 save_name = 'result_basic.png'
-thres = 16500
+thres = 70
 max_range = 255
 
 depthmap = cv2.imread(depthmap_path, cv2.IMREAD_UNCHANGED)
@@ -35,9 +36,10 @@ def get_color_depthmap(depthmap, max_range):
     # generate 256-level color map
     cmap = plt.get_cmap("jet", 256)
     cmap = np.array([cmap(i) for i in range(256)])[:, :3] * 255
-
     # sparse depthmap인 경우 depth가 있는 곳만 추출합니다.
     depth_pixel_v_s, depth_pixel_u_s = np.where(depthmap > 0)
+
+    print(np.unique(depthmap))
 
     H, W = depthmap.shape
     color_depthmap = np.zeros((H, W, 3)).astype(np.uint8)
@@ -46,6 +48,8 @@ def get_color_depthmap(depthmap, max_range):
         color_index = int(255 * min(depth, max_range) / max_range)
         color = cmap[color_index, :]
         cv2.circle(color_depthmap, (depth_pixel_u, depth_pixel_v), 1, color=tuple(color), thickness=-1)
+
+    color_depthmap[(color_depthmap == 0).all(axis=-1)] = [255, 255, 255]
 
     return color_depthmap
 

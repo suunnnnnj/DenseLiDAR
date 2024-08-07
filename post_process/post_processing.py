@@ -96,8 +96,9 @@ def main(predicted_depth_path, pseudo_depth_path):
   
     post_processing_depth = np.where(edge == 255, np.nan, post_processing_depth)
     cv2.imwrite(post_processing_depth_path, post_processing_depth)
+    '''
     depth_image = plt.imread(post_processing_depth_path)
-    plt.imsave('post_processing_depth.png', depth_image, cmap='bwr')
+    plt.imsave('post_processing_depth.png', depth_image, cmap='bwr')'''
     print(f"Post processing depth image saved to {post_processing_depth_path}")
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
