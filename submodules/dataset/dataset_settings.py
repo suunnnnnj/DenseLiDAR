@@ -2,12 +2,13 @@ import glob
 import os
 import shutil
 
-from submodules.dataset.depth_completion import ip_basic
-from submodules.dataset.utils.data_matching import matching_sync, matching_file_dir
-from submodules.dataset.utils.image_preprocessing import image_preprocessing
+from depth_completion import ip_basic
+from utils.data_matching import matching_sync, matching_file_dir
+from utils.image_preprocessing import image_preprocessing
 
 # YOUR DATA PATH
-root_dir = '/home/mobiltech/Desktop/DenseLiDAR/datasets'
+root_dir = os.path.dirname(os.path.abspath(__file__))
+print(root_dir)
 
 # 1. Remove kitti_raw's zip files
 print('remove kitti_raw\'s zip files')
