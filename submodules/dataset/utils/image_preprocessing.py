@@ -144,7 +144,7 @@ def image_preprocessing(root_dir):
     image_val_dir = os.path.join(root_dir, 'kitti_raw/val')
 
     print("\nRemove unused files:")
-    # remove_unused_files(root_dir, kitti_raw_list)
+    remove_unused_files(root_dir, kitti_raw_list)
     remove_oxts(root_dir, kitti_raw_list)
 
     print("\nSplit train and val:")

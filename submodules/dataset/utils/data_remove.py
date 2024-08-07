@@ -43,3 +43,10 @@ def remove_empty(root_dir):
                         shutil.rmtree(os.path.join(path, 'image_03'))
                     except Exception as e:
                         print(e)
+
+def remove_unmatching_file(root_dir):
+    path_1 = os.path.join(root_dir, 'kitti_raw/train/2011_09_26_drive_0009_sync/proj_depth/image_02')
+    path_2 = os.path.join(root_dir, 'kitti_raw/train/2011_09_26_drive_0009_sync/proj_depth/image_03')
+    for n in range(177, 181):
+        os.remove(os.path.join(path_1, f'0000000{n}.png'))
+        os.remove(os.path.join(path_2, f'0000000{n}.png'))

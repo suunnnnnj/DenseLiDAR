@@ -38,3 +38,5 @@ except Exception as e:
 matching_file_dir(root_dir)
 
 remove_empty(root_dir)
+
+remove_unmatching_file(root_dir)
