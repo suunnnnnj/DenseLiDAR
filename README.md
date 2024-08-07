@@ -24,7 +24,7 @@ Please note that this implementation is not the official code provided by the au
 <img src="https://github.com/user-attachments/assets/eeba8406-866a-4caf-8764-37b5619d66eb" width="900"/>
 
 ### Our Results
-You can check our implementation results of Depth Completion/3D Visualization on [this link](https://github.com/suunnnnnj/DenseLiDAR/tree/main/post_process#post-processing--3d-visualization)
+You can check our implementation results of Depth Completion/3D Visualization on [this link](https://github.com/suunnnnnj/DenseLiDAR/tree/main/post_process#post-processing--3d-visualization).
 
 **Predictions**
 
@@ -49,7 +49,15 @@ pip install -r requirements.txt
 ```
 
 ### Dataset
+**kitti lidar dataset download**
+
+Visit the [KITTI](https://www.cvlibs.net/datasets/kitti/) homepage and download the two datasets below on the [depth completion](https://www.cvlibs.net/datasets/kitti/eval_depth.php?benchmark=depth_completion) page.
+- Download annotated depth maps data set (14 GB)
+- Download projected raw LiDaR scans data set (5 GB)
+</br>
+
 **kitti_raw dataset download**
+
 ```
 cd datasets/kitti_depth
 wget https://github.com/youmi-zym/CompletionFormer/files/12575038/kitti_archives_to_download.txt
@@ -59,23 +67,47 @@ unzip "*.zip"
 ```
 
 ```
-kitti_depth
+datasets
 ├──data_depth_annotated
 |     ├── train
 |     └── val
 ├── data_depth_velodyne
 |     ├── train
 |     └── val
-├── data_depth_selection
-|     ├── test_depth_completion_anonymous
-|     |── test_depth_prediction_anonymous
-|     └── val_selection_cropped
 └── kitti_raw
       ├── 2011_09_26
       ├── 2011_09_28
       ├── 2011_09_29
       ├── 2011_09_30
       └── 2011_10_03
+```
+
+</br>**Dataset configuration**
+
+Download all three data, configure it as in the file structure above, and then run the commands below to configure the dataset to be used for learning.</br>
+Once completed, you will have the following file structure.
+
+```
+python submodules/dataset/data_settings.py
+```
+
+```
+datasets
+├──data_depth_annotated
+|     ├── train
+|     └── val
+├── data_depth_velodyne
+|     ├── train
+|     └── val
+├── kitti_raw
+|     ├── train
+|     └── val
+├── pseudo_depth_map
+|     ├── train
+|     └── val
+└── pseudo_gt_map
+      ├── train
+      └── val
 ```  
 
 
