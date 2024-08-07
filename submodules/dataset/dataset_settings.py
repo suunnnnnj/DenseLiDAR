@@ -2,23 +2,18 @@ import glob
 import os
 import shutil
 
+from pathlib import Path
 from depth_completion import ip_basic
 from utils.data_matching import matching_sync, matching_file_dir
 from utils.image_preprocessing import image_preprocessing
+from utils.data_remove import *
 
 # YOUR DATA PATH
-root_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.join(Path(__file__).resolve().parents[2], 'datasets')
 print(root_dir)
 
 # 1. Remove kitti_raw's zip files
-print('remove kitti_raw\'s zip files')
-zip_files = glob.glob(os.path.join(root_dir, 'kitti_raw', "*.zip"))
-for zip_file in zip_files:
-    try:
-        os.remove(zip_file)
-    except Exception as e:
-        print(f"Error deleting {zip_file}: {e}")
-print('zip file removal completed')
+remove_zip(root_dir)
 
 # 2. Image preprocessing: remove unused image files / split train and val / matching sync
 image_train_list, image_val_list = image_preprocessing(root_dir)
@@ -41,3 +36,5 @@ except Exception as e:
     print(e)
 
 matching_file_dir(root_dir)
+
+remove_empty(root_dir)
