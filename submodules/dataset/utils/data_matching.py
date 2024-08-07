@@ -1,6 +1,8 @@
 import os
 import shutil
 
+from submodules.dataset.utils.get_func import get_inner_folder
+
 
 def matching_sync(root_dir, image_train_list, image_val_list):
     fold_list = ['data_depth_annotated', 'data_depth_velodyne']
@@ -19,13 +21,6 @@ def matching_sync(root_dir, image_train_list, image_val_list):
                 if folder not in reference_list:
                     folder_path = os.path.join(sync_dir, folder)
                     shutil.rmtree(folder_path)
-
-
-def get_inner_folder(folder):
-    if folder == 'data_depth_annotated' or folder == 'pseudo_gt_map':
-        return 'groundtruth'
-    elif folder == 'data_depth_velodyne' or folder == 'pseudo_depth_map':
-        return 'velodyne_raw'
 
 
 def matching_file_dir(root_dir):

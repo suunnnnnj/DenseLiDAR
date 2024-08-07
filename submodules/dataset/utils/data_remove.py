@@ -3,12 +3,7 @@ import glob
 import shutil
 import tqdm
 
-
-def get_inner_folder(folder):
-    if folder == 'data_depth_annotated' or folder == 'pseudo_gt_map':
-        return 'groundtruth'
-    elif folder == 'data_depth_velodyne' or folder == 'pseudo_depth_map':
-        return 'velodyne_raw'
+from submodules.dataset.utils.get_func import get_inner_folder
 
 
 def remove_zip(root_dir):
@@ -20,7 +15,6 @@ def remove_zip(root_dir):
         except Exception as e:
             print(f"Error deleting {zip_file}: {e}")
     print('zip file removal completed')
-
 
 def remove_empty(root_dir):
     pos_list = ['image_02', 'image_03']  # left / right

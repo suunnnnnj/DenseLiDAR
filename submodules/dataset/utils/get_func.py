@@ -22,3 +22,9 @@ def get_last_5(dir_path):
         last_5.append(file)
 
     return last_5
+
+def get_inner_folder(folder):
+    if folder == 'data_depth_annotated' or folder == 'pseudo_gt_map':
+        return 'groundtruth'
+    elif folder == 'data_depth_velodyne' or folder == 'pseudo_depth_map':
+        return 'velodyne_raw'
