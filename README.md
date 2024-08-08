@@ -28,12 +28,11 @@ You can check our implementation results of Depth Completion/3D Visualization on
 
 **Predictions**
 
-<img src="https://github.com/user-attachments/assets/9718bb71-ea80-4406-88fc-2a0b966ef76a" width="900" />
+<img src="https://github.com/user-attachments/assets/c89720bc-7bdc-49be-9500-dbc4de663ab1" width="900" />
 
 **3D Visualizations**
 
 <img src="https://github.com/user-attachments/assets/700b1686-09c1-4fef-906f-d5731c97cb68" alt="Image Description" width="500"/>
-
 
 
 ## Requirements
