@@ -1,4 +1,7 @@
 import os
+
+import cv2
+import numpy as np
 from tqdm import tqdm
 
 def get_sync_path(root_dir, kitti_raw_list):
@@ -28,3 +31,9 @@ def get_inner_folder(folder):
         return 'groundtruth'
     elif folder == 'data_depth_velodyne' or folder == 'pseudo_depth_map':
         return 'velodyne_raw'
+
+def get_mask(map_path, max_range, thres):
+    map = cv2.imread(map_path, cv2.IMREAD_UNCHANGED)
+    map= map.astype(np.float32) * max_range / thres
+    zero_mask = np.where(map == 0, 1, 0)
+    return zero_mask

@@ -1,9 +1,8 @@
 import os
 import glob
 import shutil
-import tqdm
 
-from submodules.dataset.utils.get_func import get_inner_folder
+from submodules.utils.get_func import get_inner_folder
 
 
 def remove_zip(root_dir):

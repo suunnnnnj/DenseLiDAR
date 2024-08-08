@@ -3,7 +3,7 @@ import shutil
 
 from tqdm import tqdm
 
-from submodules.dataset.utils.get_func import get_sync_path, get_last_5
+from submodules.utils.get_func import get_sync_path, get_last_5
 
 kitti_raw_list = ['kitti_raw/2011_09_26',
                   'kitti_raw/2011_09_28',

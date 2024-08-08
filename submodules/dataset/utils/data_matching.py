@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from submodules.dataset.utils.get_func import get_inner_folder
+from submodules.utils.get_func import get_inner_folder
 
 
 def matching_sync(root_dir, image_train_list, image_val_list):

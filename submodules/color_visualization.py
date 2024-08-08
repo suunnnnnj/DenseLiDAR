@@ -23,23 +23,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-depthmap_path = "/home/mobiltech/Desktop/main/DenseLiDAR/post_process/post_processing_depth.png" # depth image가 아닐 경우 / 3채널 이미지일 경우 에러
-# pseudo_path   = "/home/mobiltech/Desktop/main/DenseLiDAR/demo/demo_pseudo_depth.png"
-save_name = 'result_basic.png'
-thres = 70
+from submodules.utils.get_func import get_mask
+
+# depth image가 아닐 경우 / 3채널 이미지일 경우 에러
+depthmap_path = "/home/mobiltech/Desktop/main/DenseLiDAR/demo/dense_depth_output.png"
+post_path = "/home/mobiltech/Desktop/main/DenseLiDAR/post_process/post_processing_depth.png"
+pseudo_path = "/home/mobiltech/Desktop/main/DenseLiDAR/demo/demo_pseudo_depth.png"
 max_range = 255
 
-depthmap = cv2.imread(depthmap_path, cv2.IMREAD_UNCHANGED)
-depthmap = depthmap.astype(np.float32) * max_range / thres
+def color_depthmap(depth_path, mode):
+    thres = 19500 if mode == 'pred' else 65
 
-def get_color_depthmap(depthmap, max_range):
+    depthmap = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
+    depthmap = depthmap.astype(np.float32) * max_range / thres
+
     # generate 256-level color map
     cmap = plt.get_cmap("jet", 256)
     cmap = np.array([cmap(i) for i in range(256)])[:, :3] * 255
-    # sparse depthmap인 경우 depth가 있는 곳만 추출합니다.
-    depth_pixel_v_s, depth_pixel_u_s = np.where(depthmap > 0)
 
-    print(np.unique(depthmap))
+    depth_pixel_v_s, depth_pixel_u_s = np.where(depthmap > 0)
 
     H, W = depthmap.shape
     color_depthmap = np.zeros((H, W, 3)).astype(np.uint8)
@@ -47,15 +49,21 @@ def get_color_depthmap(depthmap, max_range):
         depth = depthmap[depth_pixel_v, depth_pixel_u]
         color_index = int(255 * min(depth, max_range) / max_range)
         color = cmap[color_index, :]
-        cv2.circle(color_depthmap, (depth_pixel_u, depth_pixel_v), 1, color=tuple(color), thickness=-1)
+        cv2.circle(color_depthmap, (depth_pixel_u, depth_pixel_v), 0, color=tuple(color), thickness=-1)
 
-    color_depthmap[(color_depthmap == 0).all(axis=-1)] = [255, 255, 255]
+    if mode == 'pseudo':
+        color_depthmap[(color_depthmap == 0).all(axis=-1)] = [255, 255, 255]
+    elif mode == 'pred':
+        mask = get_mask(pseudo_path, max_range, thres)
+        color_depthmap[mask == 1] = [255, 255, 255]
+    else:
+        print('Choose mode pseudo or pred')
 
-    return color_depthmap
+    plt.imshow(color_depthmap)
+    img = Image.fromarray(color_depthmap)
+    img.save(f'{mode}_result.png', 'png')
 
-color_depthmap = get_color_depthmap(depthmap, max_range)
+    print(f"Visualization saved: {mode}_result.png")
 
-plt.imshow(color_depthmap)
-img = Image.fromarray(color_depthmap)
-img.show()
-img.save('result_basic.png', 'png')
+color_depthmap(depthmap_path, 'pred')
+color_depthmap(post_path, 'pseudo')
