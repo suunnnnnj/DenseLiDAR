@@ -52,7 +52,7 @@ pip install -r requirements.txt
 
 Visit the [KITTI](https://www.cvlibs.net/datasets/kitti/) homepage and download the two datasets below on the [depth completion](https://www.cvlibs.net/datasets/kitti/eval_depth.php?benchmark=depth_completion) page.
 - Download annotated depth maps data set (14 GB)
-- Download projected raw LiDaR scans data set (5 GB)
+- Download projected raw LiDAR scans data set (5 GB)
 </br>
 
 **kitti_raw dataset download**
