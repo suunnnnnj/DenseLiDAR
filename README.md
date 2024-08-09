@@ -87,7 +87,7 @@ Download all three data, configure it as in the file structure above, and then r
 Once completed, you will have the following file structure.
 
 ```
-python submodules/dataset/data_settings.py
+python submodules/dataset/dataset_settings.py
 ```
 
 ```
