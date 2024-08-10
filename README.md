@@ -117,7 +117,7 @@ datasets
 python train.py --data_path [YOUR_DATASET_PATH] --epochs [EPOCHS] --checkpoint [CHECKPOINT] --batch_size [BATCH_SIZE] --gpu_nums [YOUR_GPU_NUMS]
 ```
 **Arguments**
-- `--datapath`: your dataset path | default: None
+- `--data_path`: your dataset path | default: None
 - `--epochs`: number of epochs to train | default: 40
 - `--checkpoint`: number of epochs to making checkpoint | default: 5
 - `--batch_size`: number of batch size to train | default: 1
